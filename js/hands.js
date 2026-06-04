@@ -58,13 +58,17 @@ function stop() {
 function isActive() { return running; }
 
 // 動画フレーム座標(正規化) → 画面座標(object-fit: cover を再現)
+// 前面カメラ(鏡映し)のときは X を反転して、画面で見た手の位置に合わせる。
 function toScreen(nx, ny) {
   const vw = video.videoWidth, vh = video.videoHeight;
   const sw = window.innerWidth, sh = window.innerHeight;
   const scale = Math.max(sw / vw, sh / vh);
   const dw = vw * scale, dh = vh * scale;
   const ox = (sw - dw) / 2, oy = (sh - dh) / 2;
-  return { x: nx * vw * scale + ox, y: ny * vh * scale + oy };
+  let x = nx * vw * scale + ox;
+  const y = ny * vh * scale + oy;
+  if (window.AR && AR.isMirrored && AR.isMirrored()) x = sw - x;
+  return { x, y };
 }
 
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }

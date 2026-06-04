@@ -25,6 +25,8 @@
   let running = false;
   let orientationOn = false;
   let lastMultiTouch = 0; // 直近の2本指操作の時刻(タップ誤爆ガード用)
+  let facing = "environment"; // "environment"=背面 / "user"=前面(手モード)
+  let mirrored = false;       // 前面カメラは鏡映しにする
 
   const tilt = { x: 0, y: 0 };
   const state = { x: 0, y: 0, scale: 1, rot: 0, base: 0 };
@@ -38,6 +40,7 @@
     state.base = computeBase();
     applyTransform();
     running = true;
+    facing = "environment"; applyMirror(); // 通常は背面カメラ
 
     await startCamera();
 
@@ -65,7 +68,21 @@
     fallback.hidden = false;
   }
 
-  // カメラ取得(失敗理由を画面に出す。制約は environment → 何でも の順に試す)
+  function applyMirror() {
+    mirrored = (facing === "user");
+    video.classList.toggle("mirror", mirrored);
+  }
+  function isMirrored() { return mirrored; }
+
+  // 手モード=前面カメラ＋鏡映し / 通常=背面 に切り替え
+  async function setFacing(f) {
+    if (f === facing && stream) return true;
+    facing = f;
+    applyMirror();
+    return startCamera();
+  }
+
+  // カメラ取得(失敗理由を画面に出す。希望の向き → 何でも の順に試す)
   async function startCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showFallback("この ブラウザは カメラに たいおうしていません");
@@ -74,7 +91,7 @@
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
 
     const tries = [
-      { video: { facingMode: { ideal: "environment" } }, audio: false },
+      { video: { facingMode: { ideal: facing } }, audio: false },
       { video: true, audio: false },
     ];
     let lastErr = null;
@@ -83,6 +100,7 @@
         stream = await navigator.mediaDevices.getUserMedia(c);
         video.srcObject = stream;
         await video.play().catch(() => {});
+        applyMirror();
         fallback.hidden = true;
         return true;
       } catch (e) {
@@ -247,7 +265,8 @@
     ctx.scale(dpr, dpr);
 
     if (video.readyState >= 2 && video.videoWidth) {
-      drawCover(ctx, video, vw, vh);
+      if (mirrored) { ctx.save(); ctx.translate(vw, 0); ctx.scale(-1, 1); drawCover(ctx, video, vw, vh); ctx.restore(); }
+      else drawCover(ctx, video, vw, vh);
     } else {
       const grd = ctx.createLinearGradient(0, 0, 0, vh);
       grd.addColorStop(0, "#2a1a5e");
@@ -279,6 +298,6 @@
   const retryBtn = document.getElementById("btn-retry-cam");
   if (retryBtn) retryBtn.addEventListener("click", () => startCamera());
 
-  global.AR = { start, stop, startCamera, requestOrientation, suppressTap, rotate, reset, moveBy, setSteady, isOverArt, capture };
+  global.AR = { start, stop, startCamera, setFacing, isMirrored, requestOrientation, suppressTap, rotate, reset, moveBy, setSteady, isOverArt, capture };
   bindGestures();
 })(window);

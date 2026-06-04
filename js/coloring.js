@@ -25,6 +25,9 @@
   // ---- なぞり塗り(長押し＆ドラッグ)の状態 ----
   const pointers = new Set();
   let painting = false;
+  let lockRegion = null; // 指: 1ストロークで塗る領域を固定(はみ出し防止)
+  let handLock = null;   // 手: いま塗っている領域
+  let handOff = 0;       // 手が領域から外れたフレーム数
 
   // ---- パレット生成 ----
   function buildPalette() {
@@ -79,44 +82,61 @@
     state.total = regions.length;
 
     bindPainting();
+    lockRegion = null; handLock = null; handOff = 0;
     if (global.FX) global.FX.clear();
     updateUndoState();
   }
 
   // 指でなぞって塗る。1本指=ぬる / 2本指=AR操作(ar.js)なので塗らない。
-  // stage 要素は使い回すので、ハンドラは置き換え。window 側は一度だけ登録。
+  // ★ はみ出し防止: 1ストロークでは「最初に触れた領域」だけを塗る。
   function bindPainting() {
     stage.onpointerdown = (e) => {
       pointers.add(e.pointerId);
       if (pointers.size > 1) { painting = false; return; }
       painting = true;
-      paintAtPoint(e.clientX, e.clientY);
+      lockRegion = null; // 新しいストローク開始
+      strokePaint(e.clientX, e.clientY);
     };
     stage.onpointermove = (e) => {
       if (!painting || pointers.size > 1) return;
-      paintAtPoint(e.clientX, e.clientY);
+      strokePaint(e.clientX, e.clientY);
     };
   }
   function endPointer(e) {
     pointers.delete(e.pointerId);
-    if (pointers.size === 0) painting = false;
+    if (pointers.size === 0) { painting = false; lockRegion = null; }
   }
   window.addEventListener("pointerup", endPointer);
   window.addEventListener("pointercancel", endPointer);
 
-  function paintAtPoint(x, y) {
+  function regionAt(x, y) {
     const el = document.elementFromPoint(x, y);
-    if (el && el.classList && el.classList.contains("colorable")) {
-      applyColor(el, x, y);
-    }
+    return (el && el.classList && el.classList.contains("colorable")) ? el : null;
   }
 
-  // 手(指先)で塗る: じわっと染み込む演出つき
+  // 指: 1ストローク = 最初に触れた領域のみ塗る（ずれても隣に飛び火しない）
+  function strokePaint(x, y) {
+    const el = regionAt(x, y);
+    if (!el) return;
+    if (lockRegion === null) {
+      lockRegion = el;
+      applyColor(el, x, y);
+    }
+    // lockRegion と同じ/別 いずれも、ここでは追加で塗らない
+  }
+
+  // 手(指先)で塗る: 最初に触れたパーツにロック。手をキャラから外すと解除。
   function handPaint(x, y) {
-    const el = document.elementFromPoint(x, y);
-    if (el && el.classList && el.classList.contains("colorable")) {
-      el.classList.add("soak"); // ゆっくり色が広がる
-      applyColor(el, x, y, true);
+    const el = regionAt(x, y);
+    if (el) {
+      handOff = 0;
+      if (handLock === null) {
+        handLock = el;
+        applyColor(el, x, y, true);
+      }
+      // 別領域に ずれても 塗らない（はみ出し防止）
+    } else if (++handOff > 4) {
+      handLock = null; // キャラから手が外れたら 次の領域を塗れる
     }
   }
 
@@ -124,6 +144,9 @@
     const target = resolveColor();
     const from = region.getAttribute("fill") || "#ffffff";
     if (from.toLowerCase() === target.toLowerCase()) return;
+    // じわっと染み込む（消すときは すぐ）
+    if (state.tool === "erase") region.classList.remove("soak");
+    else region.classList.add("soak");
     region.setAttribute("fill", target);
     // ぷにっと反応（クラスを付け直してアニメを再生）
     region.classList.remove("just-painted");

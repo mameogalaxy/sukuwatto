@@ -319,4 +319,7 @@ html, body {
 }
 
 /* 手で塗るときの「じわっと染み込む」ゆっくり変化 */
-.colorable.soak { transition: fill 0.5s ease; }
+.colorable.soak { transition: fill 1.3s ease-out; }
+
+/* 前面カメラ(手モード)は鏡映しにして「前から塗る」自然な操作に */
+.ar-video.mirror { transform: scaleX(-1); }

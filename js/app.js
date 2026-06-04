@@ -86,16 +86,23 @@
   }
   btnHands.addEventListener("click", async () => {
     if (!window.Hands) { alert("手の にんしきが よみこめませんでした"); return; }
-    if (Hands.isActive()) { Hands.stop(); resetHandsBtn(); return; }
+    if (Hands.isActive()) {
+      Hands.stop();
+      AR.setFacing("environment"); // 背面カメラに もどす
+      resetHandsBtn();
+      return;
+    }
     btnHands.textContent = "⏳ よみこみ中";
     btnHands.disabled = true;
     try {
+      await AR.setFacing("user"); // 前面カメラ＋鏡映し（前から絵に向かって塗る感じ）
       await Hands.start();
       btnHands.classList.add("on");
       btnHands.textContent = "✋ ON";
     } catch (e) {
       console.error("hands start failed:", e);
       alert("手の にんしきを よみこめませんでした。\n（つうしん環境を かくにん）\nゆびで タッチして ぬってね。");
+      AR.setFacing("environment");
       resetHandsBtn();
     } finally {
       btnHands.disabled = false;
