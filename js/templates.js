@@ -162,6 +162,107 @@
             d="M330 120 l5 11 l12 1 l-9 8 l3 12 l-11 -6 l-11 6 l3 -12 l-9 -8 l12 -1 Z"/>
         </svg>`,
     },
+
+    {
+      id: "cat",
+      name: "ねこ",
+      emoji: "🐱",
+      svg: `
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="region" data-name="kage" cx="200" cy="360" rx="110" ry="20" fill="#ffffff" ${L}/>
+          <path class="region" data-name="tail" ${L} fill="#ffffff" d="M295 295 q70 0 60 -68 q-6 -28 -30 -22 q20 6 16 34 q-6 44 -60 38 Z"/>
+          <path class="region" data-name="body" ${L} fill="#ffffff" d="M200 120 C268 120 302 178 302 242 C302 322 256 346 200 346 C144 346 98 322 98 242 C98 178 132 120 200 120 Z"/>
+          <path class="region" data-name="earL" ${L} fill="#ffffff" d="M122 152 L106 78 L178 120 Z"/>
+          <path class="region" data-name="earR" ${L} fill="#ffffff" d="M278 152 L294 78 L222 120 Z"/>
+          <path class="region" data-name="earInL" ${L} fill="#ffffff" d="M132 140 L124 98 L164 122 Z"/>
+          <path class="region" data-name="earInR" ${L} fill="#ffffff" d="M268 140 L276 98 L236 122 Z"/>
+          <circle class="region" data-name="cheekL" cx="142" cy="240" r="17" fill="#ffffff" ${L}/>
+          <circle class="region" data-name="cheekR" cx="258" cy="240" r="17" fill="#ffffff" ${L}/>
+          <circle data-name="eyeL" cx="170" cy="208" r="11" fill="#2a2540"/>
+          <circle data-name="eyeR" cx="230" cy="208" r="11" fill="#2a2540"/>
+          <circle cx="167" cy="204" r="3.5" fill="#ffffff"/>
+          <circle cx="227" cy="204" r="3.5" fill="#ffffff"/>
+          <path d="M192 224 l16 0 l-8 9 Z" fill="#2a2540"/>
+          <path d="M200 233 q-9 11 -20 6 M200 233 q9 11 20 6" fill="none" ${L}/>
+          <path d="M118 222 l-42 -8 M118 236 l-44 6 M282 222 l42 -8 M282 236 l44 6" fill="none" ${L}/>
+          <path class="region" data-name="star" ${L} fill="#ffffff" d="M320 128 l6 13 l14 2 l-11 10 l4 14 l-13 -7 l-13 7 l4 -14 l-11 -10 l14 -2 Z"/>
+        </svg>`,
+    },
+
+    {
+      id: "rabbit",
+      name: "うさぎ",
+      emoji: "🐰",
+      svg: `
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="region" data-name="kage" cx="200" cy="362" rx="100" ry="18" fill="#ffffff" ${L}/>
+          <path class="region" data-name="earL" ${L} fill="#ffffff" d="M168 150 C150 70 156 28 176 28 C196 28 192 96 186 150 Z"/>
+          <path class="region" data-name="earR" ${L} fill="#ffffff" d="M232 150 C250 70 244 28 224 28 C204 28 208 96 214 150 Z"/>
+          <path class="region" data-name="earInL" ${L} fill="#ffffff" d="M172 142 C163 88 167 56 176 56 C185 56 183 92 180 142 Z"/>
+          <path class="region" data-name="earInR" ${L} fill="#ffffff" d="M228 142 C237 88 233 56 224 56 C215 56 217 92 220 142 Z"/>
+          <path class="region" data-name="body" ${L} fill="#ffffff" d="M200 150 C256 150 292 200 292 260 C292 326 250 350 200 350 C150 350 108 326 108 260 C108 200 144 150 200 150 Z"/>
+          <ellipse class="region" data-name="tummy" cx="200" cy="284" rx="54" ry="48" fill="#ffffff" ${L}/>
+          <circle class="region" data-name="cheekL" cx="150" cy="244" r="16" fill="#ffffff" ${L}/>
+          <circle class="region" data-name="cheekR" cx="250" cy="244" r="16" fill="#ffffff" ${L}/>
+          <circle data-name="eyeL" cx="172" cy="224" r="11" fill="#2a2540"/>
+          <circle data-name="eyeR" cx="228" cy="224" r="11" fill="#2a2540"/>
+          <circle cx="169" cy="220" r="3.5" fill="#ffffff"/>
+          <circle cx="225" cy="220" r="3.5" fill="#ffffff"/>
+          <path d="M194 238 l12 0 l-6 7 Z" fill="#2a2540"/>
+          <path d="M200 245 q-8 9 -17 5 M200 245 q8 9 17 5" fill="none" ${L}/>
+          <path class="region" data-name="heart" ${L} fill="#ffffff" d="M310 148 c-8 -12 -28 -4 -22 12 c4 12 22 20 22 20 c0 0 18 -8 22 -20 c6 -16 -14 -24 -22 -12 Z"/>
+        </svg>`,
+    },
+
+    {
+      id: "robot",
+      name: "ロボ",
+      emoji: "🤖",
+      svg: `
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="region" data-name="kage" cx="200" cy="364" rx="110" ry="18" fill="#ffffff" ${L}/>
+          <path d="M200 92 L200 58" fill="none" ${L}/>
+          <circle class="region" data-name="bulb" cx="200" cy="48" r="13" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="armL" x="86" y="240" width="34" height="74" rx="16" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="armR" x="280" y="240" width="34" height="74" rx="16" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="body" x="132" y="232" width="136" height="96" rx="22" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="legL" x="158" y="324" width="26" height="32" rx="8" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="legR" x="216" y="324" width="26" height="32" rx="8" fill="#ffffff" ${L}/>
+          <circle class="region" data-name="btn1" cx="178" cy="276" r="11" fill="#ffffff" ${L}/>
+          <circle class="region" data-name="btn2" cx="222" cy="276" r="11" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="head" x="118" y="92" width="164" height="130" rx="26" fill="#ffffff" ${L}/>
+          <rect class="region" data-name="face" x="146" y="118" width="108" height="78" rx="16" fill="#ffffff" ${L}/>
+          <circle data-name="eyeL" cx="176" cy="150" r="12" fill="#2a2540"/>
+          <circle data-name="eyeR" cx="224" cy="150" r="12" fill="#2a2540"/>
+          <circle cx="180" cy="146" r="3.5" fill="#ffffff"/>
+          <circle cx="228" cy="146" r="3.5" fill="#ffffff"/>
+          <path d="M178 178 q22 14 44 0" fill="none" ${L}/>
+        </svg>`,
+    },
+
+    {
+      id: "flower",
+      name: "おはな",
+      emoji: "🌸",
+      svg: `
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="region" data-name="kage" cx="200" cy="366" rx="86" ry="16" fill="#ffffff" ${L}/>
+          <path d="M200 250 L200 332" fill="none" ${L}/>
+          <path class="region" data-name="leaf" ${L} fill="#ffffff" d="M200 300 c-46 6 -58 -30 -64 -52 c44 -4 60 24 64 52 Z"/>
+          <ellipse class="region" data-name="petal1" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(0 200 190)"/>
+          <ellipse class="region" data-name="petal2" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(60 200 190)"/>
+          <ellipse class="region" data-name="petal3" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(120 200 190)"/>
+          <ellipse class="region" data-name="petal4" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(180 200 190)"/>
+          <ellipse class="region" data-name="petal5" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(240 200 190)"/>
+          <ellipse class="region" data-name="petal6" cx="200" cy="108" rx="30" ry="52" fill="#ffffff" ${L} transform="rotate(300 200 190)"/>
+          <circle class="region" data-name="center" cx="200" cy="190" r="50" fill="#ffffff" ${L}/>
+          <circle data-name="eyeL" cx="184" cy="186" r="9" fill="#2a2540"/>
+          <circle data-name="eyeR" cx="216" cy="186" r="9" fill="#2a2540"/>
+          <circle cx="181" cy="183" r="3" fill="#ffffff"/>
+          <circle cx="213" cy="183" r="3" fill="#ffffff"/>
+          <path d="M188 204 q12 12 24 0" fill="none" ${L}/>
+        </svg>`,
+    },
   ];
 
   // 塗りパレット（こども向けに あかるい いろ）

@@ -200,4 +200,19 @@
   document.querySelectorAll('[data-action="close-shot"]').forEach((b) =>
     b.addEventListener("click", () => (shotModal.hidden = true))
   );
+
+  // ---- iOS のダブルタップ拡大 / ページのピンチ拡大を抑止(カメラがズームして戻せない対策) ----
+  let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
+  document.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const now = Date.now();
+    // 同じ場所への素早い2連タップ(=拡大ジェスチャ)だけ抑止。別場所の連続タップは通す。
+    if (now - lastTapTime < 350 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 40) {
+      e.preventDefault();
+    }
+    lastTapTime = now; lastTapX = t.clientX; lastTapY = t.clientY;
+  }, { passive: false });
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
+  document.addEventListener("dblclick", (e) => e.preventDefault());
 })();

@@ -25,6 +25,7 @@ html, body {
   color: var(--text);
   font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Segoe UI", system-ui, sans-serif;
   overscroll-behavior: none;
+  touch-action: manipulation; /* ダブルタップ拡大を無効化 */
 }
 
 /* ---------- 画面切り替え ---------- */
