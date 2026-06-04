@@ -9,7 +9,7 @@
   "use strict";
 
   const canvas = document.getElementById("fx-canvas");
-  if (!canvas) { global.FX = { burst() {}, celebrate() {}, clear() {} }; return; }
+  if (!canvas) { global.FX = { burst() {}, magic() {}, celebrate() {}, soak() {}, clear() {} }; return; }
   const ctx = canvas.getContext("2d");
 
   let particles = [];
@@ -53,6 +53,11 @@
   // 塗ったときの小さなはじけ
   function burst(x, y, color) {
     spawn(x, y, color, { count: 16, power: 1 });
+  }
+
+  // 指パッチンで塗ったときの 魔法のポンッ
+  function magic(x, y, color) {
+    spawn(x, y, color, { count: 26, power: 1.5, big: true });
   }
 
   // 手でなぞったとき: ふわっと色がにじむ(やわらかい光の粒)
@@ -128,5 +133,5 @@
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   }
 
-  global.FX = { burst, celebrate, clear };
+  global.FX = { burst, magic, celebrate, soak, clear };
 })(window);

@@ -19,9 +19,8 @@ let video = null;
 let cursorsEl = null;
 let lastTs = -1;
 
-// つまみ状態(手ごと)
-const grabs = [false, false];
-const lastGrabPt = [null, null];
+// 指パッチンの直前状態(手ごと)。閉じる瞬間に1回だけ発火させる。
+const prevSnap = [false, false];
 
 async function ensureModel() {
   if (landmarker) return;
@@ -51,8 +50,8 @@ function stop() {
   running = false;
   if (cursorsEl) cursorsEl.innerHTML = "";
   if (window.AR && AR.setSteady) AR.setSteady(false);
-  grabs[0] = grabs[1] = false;
-  lastGrabPt[0] = lastGrabPt[1] = null;
+  if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
+  prevSnap[0] = prevSnap[1] = false;
 }
 
 function isActive() { return running; }
@@ -88,43 +87,46 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+// 1本の手の特徴量(指先・スナップ判定)を計算
+function handFeatures(lm) {
+  const idx = toScreen(lm[8].x, lm[8].y);    // 人差し指の先(=ねらい)
+  const thumb = toScreen(lm[4].x, lm[4].y);  // 親指の先
+  const mid = toScreen(lm[12].x, lm[12].y);  // 中指の先
+  const wrist = toScreen(lm[0].x, lm[0].y);  // 手首
+  const mcp = toScreen(lm[9].x, lm[9].y);    // 中指のつけね
+  const hs = dist(wrist, mcp) || 1;          // 手の大きさ(基準)
+  const indexExtended = dist(idx, wrist) > hs * 1.3; // 人差し指を のばしている
+  const snapClosed = dist(thumb, mid) < hs * 0.5;    // 親指と中指が くっつく=パッチン
+  return { idx, snap: indexExtended && snapClosed };
+}
+
 function handle(res) {
   const hands = (res && res.landmarks) || [];
   renderCursors(hands);
   if (window.AR && AR.setSteady) AR.setSteady(hands.length > 0); // 手があるあいだは止めて狙いやすく
 
-  for (let i = 0; i < hands.length && i < 2; i++) {
-    const lm = hands[i];
-    const tip = toScreen(lm[8].x, lm[8].y);     // 人差し指の先
-    const thumb = toScreen(lm[4].x, lm[4].y);   // 親指の先
-    const palm = toScreen(lm[0].x, lm[0].y);    // 手首
-    const handSize = dist(tip, palm) || 1;
-    const pinching = dist(tip, thumb) < handSize * 0.45;
-
-    if (pinching) {
-      // つまむ → つかんで動かす
-      const grabPt = { x: (tip.x + thumb.x) / 2, y: (tip.y + thumb.y) / 2 };
-      if (!grabs[i]) {
-        grabs[i] = window.AR && AR.isOverArt ? AR.isOverArt(grabPt.x, grabPt.y) : true;
-        lastGrabPt[i] = grabPt;
-      } else if (lastGrabPt[i] && window.AR && AR.moveBy) {
-        AR.moveBy(grabPt.x - lastGrabPt[i].x, grabPt.y - lastGrabPt[i].y);
-        lastGrabPt[i] = grabPt;
-      }
-    } else {
-      grabs[i] = false;
-      lastGrabPt[i] = null;
-      // ひらいた手 → 指先で塗る
-      if (window.Coloring && Coloring.handPaint) Coloring.handPaint(tip.x, tip.y);
-    }
+  if (hands.length === 0) {
+    if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
+    prevSnap[0] = prevSnap[1] = false;
+    return;
   }
-  if (hands.length < 2) { grabs[1] = false; lastGrabPt[1] = null; }
-  if (hands.length < 1) { grabs[0] = false; lastGrabPt[0] = null; }
+
+  for (let i = 0; i < hands.length && i < 2; i++) {
+    const f = handFeatures(hands[i]);
+    // 先頭の手の 指先の近くのパーツを ハイライト(ねらい)
+    if (i === 0 && window.Coloring && Coloring.aimAt) Coloring.aimAt(f.idx.x, f.idx.y);
+    // パッチンした瞬間(閉じる立ち上がり)に 1回だけ 塗る
+    if (f.snap && !prevSnap[i] && window.Coloring) {
+      if (Coloring.aimAt) Coloring.aimAt(f.idx.x, f.idx.y); // その手の ねらいに合わせる
+      if (Coloring.snapPaint) Coloring.snapPaint();
+    }
+    prevSnap[i] = f.snap;
+  }
+  if (hands.length < 2) prevSnap[1] = false;
 }
 
 function renderCursors(hands) {
   if (!cursorsEl) return;
-  // 必要な数だけ カーソル要素を用意
   while (cursorsEl.children.length < hands.length) {
     const c = document.createElement("div");
     c.className = "hand-cursor";
@@ -133,14 +135,10 @@ function renderCursors(hands) {
   for (let i = 0; i < cursorsEl.children.length; i++) {
     const el = cursorsEl.children[i];
     if (i >= hands.length) { el.style.display = "none"; continue; }
-    const lm = hands[i];
-    const tip = toScreen(lm[8].x, lm[8].y);
-    const thumb = toScreen(lm[4].x, lm[4].y);
-    const palm = toScreen(lm[0].x, lm[0].y);
-    const pinching = dist(tip, thumb) < (dist(tip, palm) || 1) * 0.45;
+    const f = handFeatures(hands[i]);
     el.style.display = "block";
-    el.style.transform = `translate(${tip.x}px, ${tip.y}px)`;
-    el.classList.toggle("pinch", pinching);
+    el.style.transform = `translate(${f.idx.x}px, ${f.idx.y}px)`;
+    el.classList.toggle("snap", f.snap);
   }
 }
 

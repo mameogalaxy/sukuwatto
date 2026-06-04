@@ -323,3 +323,16 @@ html, body {
 
 /* 前面カメラ(手モード)は鏡映しにして「前から塗る」自然な操作に */
 .ar-video.mirror { transform: scaleX(-1); }
+
+/* 指パッチン: ねらっているパーツを光らせる */
+@keyframes aimpulse { 0%,100% { stroke-width: 5; } 50% { stroke-width: 9; } }
+.colorable.aim {
+  stroke: var(--accent-2);
+  filter: drop-shadow(0 0 6px var(--accent-2));
+  animation: aimpulse 0.8s ease-in-out infinite;
+}
+/* パッチン成立の瞬間、指先カーソルが緑に光る */
+.hand-cursor.snap {
+  background: radial-gradient(circle, #fff, rgba(123,214,107,0.65) 45%, transparent 70%);
+  box-shadow: 0 0 26px rgba(123,214,107,1);
+}

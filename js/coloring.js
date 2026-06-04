@@ -20,6 +20,7 @@
     painted: new Set(), // ユーザーが塗った領域(完成判定用)
     total: 0, // 塗れる領域の数
     completed: false,
+    aimRegion: null, // 指パッチン: いま選択中(光っている)パーツ
   };
 
   // ---- なぞり塗り(長押し＆ドラッグ)の状態 ----
@@ -82,7 +83,7 @@
     state.total = regions.length;
 
     bindPainting();
-    lockRegion = null; handLock = null; handOff = 0;
+    lockRegion = null; handLock = null; handOff = 0; state.aimRegion = null;
     if (global.FX) global.FX.clear();
     updateUndoState();
   }
@@ -138,6 +139,40 @@
     } else if (++handOff > 4) {
       handLock = null; // キャラから手が外れたら 次の領域を塗れる
     }
+  }
+
+  // ---- 指パッチン方式: 指先の近くのパーツを「選択(光らせる)」→ パッチンで塗る ----
+  function aimAt(x, y) {
+    if (!stage.querySelector("svg")) return null;
+    const regions = stage.querySelectorAll(".colorable");
+    let best = null, bestD = Infinity;
+    regions.forEach((r) => {
+      const b = r.getBoundingClientRect();
+      const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+      const d = (cx - x) ** 2 + (cy - y) ** 2;
+      if (d < bestD) { bestD = d; best = r; }
+    });
+    if (best !== state.aimRegion) {
+      if (state.aimRegion) state.aimRegion.classList.remove("aim");
+      state.aimRegion = best;
+      if (best) best.classList.add("aim");
+    }
+    return best;
+  }
+
+  function clearAim() {
+    if (state.aimRegion) state.aimRegion.classList.remove("aim");
+    state.aimRegion = null;
+  }
+
+  // パッチン！ 選択中のパーツを 魔法みたいに塗る
+  function snapPaint() {
+    const r = state.aimRegion;
+    if (!r) return;
+    const b = r.getBoundingClientRect();
+    const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    applyColor(r, cx, cy, true);
+    if (global.FX) global.FX.magic(cx, cy, resolveColor());
   }
 
   function applyColor(region, px, py, soft) {
@@ -254,5 +289,8 @@
     setTool,
     renderToCanvas,
     handPaint,
+    aimAt,
+    clearAim,
+    snapPaint,
   };
 })(window);

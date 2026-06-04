@@ -203,12 +203,10 @@
       if (e.touches.length === 2 && g) {
         e.preventDefault();
         const [a, b] = e.touches;
-        const m = mid(a, b), d = dist(a, b), an = ang(a, b);
-        state.x += m.x - g.m.x;
-        state.y += m.y - g.m.y;
+        const d = dist(a, b), an = ang(a, b);
+        // 位置は動かさない(ずれない)。大きさと向きだけ調整。
         state.scale = Math.max(0.25, Math.min(4, g.scale * (d / g.d)));
         state.rot = g.rot + (an - g.a) * 180 / Math.PI;
-        g.m = m;
         lastMultiTouch = Date.now();
         applyTransform();
       }
