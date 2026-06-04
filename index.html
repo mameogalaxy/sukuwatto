@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#eef2f8" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=17" />
+  <link rel="stylesheet" href="css/styles.css?v=18" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -55,8 +55,8 @@
     <!-- キラキラ エフェクト層(UIの下・キャラの上) -->
     <canvas id="fx-canvas" class="fx-canvas"></canvas>
 
-    <!-- 手の指先カーソル -->
-    <div id="hand-cursors" class="hand-cursors" aria-hidden="true"></div>
+    <!-- 手のハンドトラッキング表示(カメラ映像は出さない) -->
+    <canvas id="hand-canvas" class="hand-canvas" aria-hidden="true"></canvas>
 
     <!-- 完成トースト -->
     <div id="ar-toast" class="ar-toast" hidden>✨ かんせい！ ✨</div>
@@ -178,11 +178,11 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=17"></script>
-  <script src="js/fx.js?v=17"></script>
-  <script src="js/coloring.js?v=17"></script>
-  <script src="js/ar.js?v=17"></script>
-  <script src="js/app.js?v=17"></script>
-  <script type="module" src="js/hands.js?v=17"></script>
+  <script src="js/templates.js?v=18"></script>
+  <script src="js/fx.js?v=18"></script>
+  <script src="js/coloring.js?v=18"></script>
+  <script src="js/ar.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
+  <script type="module" src="js/hands.js?v=18"></script>
 </body>
 </html>
