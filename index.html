@@ -8,7 +8,7 @@
   />
   <meta name="theme-color" content="#1b1140" />
   <title>すくわっと AR ぬりえ</title>
-  <meta name="description" content="キャラクターをぬって、ARで現実の世界に飛び出させよう！" />
+  <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
@@ -21,65 +21,53 @@
         <span class="home-title-main">AR ぬりえ</span>
         <span class="home-title-sub">すくわっと</span>
       </h1>
-      <p class="home-lead">すきな キャラクターを ぬって、<br />カメラで げんじつの せかいに よびだそう！</p>
+      <p class="home-lead">キャラクターを えらぶと、カメラの なかに とびだすよ。<br />ゆびで さわって、まほうみたいに いろを つけよう！</p>
 
       <h2 class="section-label">キャラクターを えらぶ</h2>
       <div id="template-gallery" class="gallery" role="list"></div>
     </div>
   </section>
 
-  <!-- ===================== ぬりえ画面 ===================== -->
-  <section id="screen-color" class="screen">
-    <header class="topbar">
-      <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
-      <h2 class="topbar-title">ぬってみよう</h2>
-      <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
-    </header>
-
-    <div class="canvas-wrap">
-      <div id="svg-stage" class="svg-stage" aria-label="ぬりえキャンバス"></div>
-    </div>
-
-    <div class="toolbar">
-      <div id="palette" class="palette" role="listbox" aria-label="いろ"></div>
-      <div class="tool-row">
-        <button class="tool" data-tool="fill" aria-pressed="true" title="ぬる">
-          <span class="tool-ico">🪣</span><span class="tool-label">ぬる</span>
-        </button>
-        <button class="tool" data-tool="erase" title="けす">
-          <span class="tool-ico">🧽</span><span class="tool-label">けす</span>
-        </button>
-        <button class="tool" id="btn-undo" title="もどす">
-          <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
-        </button>
-        <button class="tool" id="btn-clear" title="ぜんぶけす">
-          <span class="tool-ico">🗑️</span><span class="tool-label">クリア</span>
-        </button>
-        <button class="tool tool-primary" id="btn-to-ar" title="ARでみる">
-          <span class="tool-ico">📷</span><span class="tool-label">AR で みる</span>
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===================== AR画面 ===================== -->
+  <!-- ===================== AR ぬりえ画面 ===================== -->
   <section id="screen-ar" class="screen screen-ar">
     <video id="ar-video" class="ar-video" autoplay playsinline muted></video>
-    <canvas id="ar-canvas" class="ar-canvas"></canvas>
     <div id="ar-fallback" class="ar-fallback" hidden>
-      <p>カメラを つかえませんでした。<br />したのボタンで しゃしんを ほぞんできます。</p>
+      <p>カメラを つかえませんでした。<br />このまま ぬって、したのボタンで ほぞんできます。</p>
+    </div>
+
+    <!-- 空間に浮かぶ、ぬれるキャラクター -->
+    <div id="ar-scene" class="ar-scene">
+      <div id="ar-art" class="ar-art">
+        <div id="ar-float" class="ar-float">
+          <div id="svg-stage" class="svg-stage" aria-label="ぬりえキャラクター"></div>
+        </div>
+      </div>
     </div>
 
     <div class="ar-overlay-ui">
       <header class="topbar topbar-ar">
-        <button class="btn btn-ghost" data-action="back-color" aria-label="もどる">‹ ぬりえに もどる</button>
-        <span id="ar-hint" class="ar-hint">ドラッグで いどう・2ほんゆびで サイズ</span>
+        <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
+        <span id="ar-hint" class="ar-hint">タップで ぬる ・ 2ほんゆびで うごかす</span>
+        <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
       </header>
 
-      <div class="ar-controls">
-        <button class="btn btn-round" id="btn-ar-rotate" title="まわす">🔄</button>
-        <button class="btn btn-shutter" id="btn-capture" title="さつえい" aria-label="さつえい"></button>
-        <button class="btn btn-round" id="btn-ar-reset" title="まんなかへ">🎯</button>
+      <div class="ar-bottom">
+        <div id="palette" class="palette" role="listbox" aria-label="いろ"></div>
+        <div class="ar-controls">
+          <button class="tool" data-tool="erase" id="btn-erase" title="けす">
+            <span class="tool-ico">🧽</span><span class="tool-label">けす</span>
+          </button>
+          <button class="tool" id="btn-undo" title="もどす">
+            <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
+          </button>
+          <button class="btn-shutter" id="btn-capture" title="さつえい" aria-label="さつえい"></button>
+          <button class="tool" id="btn-ar-rotate" title="まわす">
+            <span class="tool-ico">🔄</span><span class="tool-label">まわす</span>
+          </button>
+          <button class="tool" id="btn-ar-reset" title="まんなかへ">
+            <span class="tool-ico">🎯</span><span class="tool-label">リセット</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -89,10 +77,11 @@
     <div class="modal-card">
       <h3>つかいかた</h3>
       <ol>
+        <li>📷 カメラに キャラクターが とびだす</li>
         <li>🎨 いろを えらぶ</li>
-        <li>🪣 ぬりたい ところを タッチ</li>
-        <li>📷 「AR で みる」を おす</li>
-        <li>カメラに キャラクターが とびだす！</li>
+        <li>👆 キャラクターを タッチして ぬる</li>
+        <li>✌️ 2ほんゆびで うごかす・大きさ・まわす</li>
+        <li>⚪ ボタンで さつえい！</li>
       </ol>
       <button class="btn btn-primary" data-action="close-help">わかった！</button>
     </div>

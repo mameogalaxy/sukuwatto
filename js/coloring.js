@@ -54,6 +54,8 @@
       region.classList.add("colorable");
       const paint = (e) => {
         e.preventDefault();
+        // 2本指で動かした直後の指離しで起きる click は塗りとして扱わない
+        if (global.AR && global.AR.suppressTap && global.AR.suppressTap()) return;
         applyColor(region);
       };
       region.addEventListener("click", paint);

@@ -1,52 +1,42 @@
 /**
- * AR（カメラオーバーレイ）機能
+ * AR ぬりえ機能
  *
- * 本格的な WebXR は端末依存が大きいため、ここでは「カメラ映像を背景に、
- * 塗ったキャラクターを空間に浮かべる」ビルボード方式で広い端末で動くようにする。
+ * カメラ映像を背景に、塗れるキャラクター(SVG)を空間に浮かべ、
+ * 指でその場で色を塗れるようにする「ライブぬりえ」方式。
  *
- *  - 背面カメラを <video> に流す
- *  - 塗り絵を PNG にして、ドラッグ移動 / 2本指ピンチで拡大縮小 / 回転
- *  - 端末の傾き(DeviceOrientation)に応じて少し動かし、空間に置いた感を出す
- *  - シャッターで video + キャラを合成して PNG 保存 / シェア
+ *  - 背面カメラを <video> に流して背景に(CSS object-fit: cover)
+ *  - キャラは DOM の SVG。タップ=その領域をぬる(coloring.js が担当)
+ *  - 2本指で 移動 / 拡大縮小 / 回転
+ *  - 端末の傾き(DeviceOrientation)で少しゆれ、ふわふわ浮かせて空間感を出す
+ *  - シャッターで カメラ映像 + 現在のキャラを合成して PNG 保存 / シェア
  */
 (function (global) {
   "use strict";
 
   const video = document.getElementById("ar-video");
-  const canvas = document.getElementById("ar-canvas");
-  const ctx = canvas.getContext("2d");
   const fallback = document.getElementById("ar-fallback");
+  const scene = document.getElementById("ar-scene");
+  const art = document.getElementById("ar-art"); // 位置・拡大・回転を JS で当てる入れ物
+  const float = document.getElementById("ar-float"); // ふわふわ(CSS)
+  const stage = document.getElementById("svg-stage"); // SVG 本体
 
   let stream = null;
   let rafId = null;
-  let sprite = null; // {img, x, y, scale, rot, baseScale}
-  let tilt = { x: 0, y: 0 };
-  let bob = 0;
   let running = false;
   let orientationOn = false;
+  let lastMultiTouch = 0; // 直近の2本指操作の時刻(タップ誤爆ガード用)
 
-  // ---- ジェスチャ状態 ----
-  const gesture = { dragging: false, lastX: 0, lastY: 0, pinchDist: 0, pinchScale: 1 };
+  const tilt = { x: 0, y: 0 };
+  const state = { x: 0, y: 0, scale: 1, rot: 0, base: 0 };
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  function computeBase() {
+    return Math.min(window.innerWidth, window.innerHeight) * 0.72;
   }
 
-  async function start(spriteImg) {
-    resize();
-    sprite = {
-      img: spriteImg,
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-      scale: 1,
-      rot: 0,
-      baseScale: Math.min(window.innerWidth, window.innerHeight) / spriteImg.width * 0.7,
-    };
+  async function start() {
+    state.x = 0; state.y = 0; state.scale = 1; state.rot = 0;
+    state.base = computeBase();
+    applyTransform();
     running = true;
 
     try {
@@ -58,7 +48,7 @@
       await video.play().catch(() => {});
       fallback.hidden = true;
     } catch (err) {
-      // カメラ不可（PC やキョカなし）でもオーバーレイは触れるようにする
+      // カメラ不可(PC やキョカなし)でも、塗って保存はできるようにする
       console.warn("camera unavailable:", err);
       fallback.hidden = false;
     }
@@ -66,16 +56,24 @@
     loop();
   }
 
+  function stop() {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+  }
+
   /**
-   * 端末の傾きセンサーを有効化する。
-   * iOS 13+ は requestPermission() が必須で、しかも「タップ操作の直後」に
-   * 同期的に呼ばないと失敗するため、await を挟む start() とは分け、
-   * ボタンの click ハンドラから直接呼べるようにしている。
+   * 端末の傾きセンサーを有効化。
+   * iOS 13+ は requestPermission() を「タップ直後に同期的に」呼ぶ必要があるため、
+   * await を挟む start() とは分け、click ハンドラから直接呼べるようにしている。
    */
   function enableOrientation() {
     if (orientationOn) return;
     const handler = (e) => {
-      // gamma:左右(-90..90) beta:前後  少しだけ反映
       if (e.gamma != null) tilt.x = Math.max(-1, Math.min(1, e.gamma / 45));
       if (e.beta != null) tilt.y = Math.max(-1, Math.min(1, (e.beta - 45) / 45));
     };
@@ -90,135 +88,125 @@
     }
   }
 
-  function stop() {
-    running = false;
-    if (rafId) cancelAnimationFrame(rafId);
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      stream = null;
-    }
-    video.srcObject = null;
+  function applyTransform() {
+    const px = tilt.x * 22;
+    const py = tilt.y * 16;
+    art.style.width = state.base + "px";
+    art.style.height = state.base + "px";
+    art.style.transform =
+      `translate(-50%, -50%) translate(${state.x + px}px, ${state.y + py}px) ` +
+      `scale(${state.scale}) rotate(${state.rot}deg)`;
   }
 
   function loop() {
     if (!running) return;
-    bob += 0.04;
-    draw();
+    applyTransform(); // 傾きを毎フレーム反映
     rafId = requestAnimationFrame(loop);
   }
 
-  function draw() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    ctx.clearRect(0, 0, w, h);
+  // ---- 2本指ジェスチャ(移動・拡大縮小・回転) ----
+  let g = null;
+  function dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+  function mid(a, b) { return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
+  function ang(a, b) { return Math.atan2(b.clientY - a.clientY, b.clientX - a.clientX); }
 
-    // 背景：カメラ映像を cover で描画
-    if (video.readyState >= 2 && video.videoWidth) {
-      drawCover(video, w, h);
-    }
+  function bindGestures() {
+    scene.addEventListener("touchstart", (e) => {
+      setSteady(true); // 触っている間はふわふわを止めて塗りやすく
+      if (e.touches.length === 2) {
+        const [a, b] = e.touches;
+        g = { m: mid(a, b), d: dist(a, b), a: ang(a, b), scale: state.scale, rot: state.rot };
+        lastMultiTouch = Date.now();
+      }
+    }, { passive: false });
 
-    if (!sprite) return;
-    const s = sprite.baseScale * sprite.scale;
-    const drawW = sprite.img.width * s;
-    const drawH = sprite.img.height * s;
+    scene.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 2 && g) {
+        e.preventDefault();
+        const [a, b] = e.touches;
+        const m = mid(a, b), d = dist(a, b), an = ang(a, b);
+        state.x += m.x - g.m.x;
+        state.y += m.y - g.m.y;
+        state.scale = Math.max(0.25, Math.min(4, g.scale * (d / g.d)));
+        state.rot = g.rot + (an - g.a) * 180 / Math.PI;
+        g.m = m;
+        lastMultiTouch = Date.now();
+        applyTransform();
+      }
+    }, { passive: false });
 
-    // 傾きパララックス + ふわふわ
-    const px = tilt.x * 26;
-    const py = tilt.y * 18 + Math.sin(bob) * 8;
+    const onEnd = (e) => {
+      if (!e.touches || e.touches.length < 2) g = null;
+      if (!e.touches || e.touches.length === 0) setSteady(false);
+      if (Date.now() - lastMultiTouch < 400) lastMultiTouch = Date.now();
+    };
+    scene.addEventListener("touchend", onEnd);
+    scene.addEventListener("touchcancel", onEnd);
 
-    ctx.save();
-    ctx.translate(sprite.x + px, sprite.y + py);
-    ctx.rotate((sprite.rot * Math.PI) / 180);
-    // 接地っぽい影
-    ctx.save();
-    ctx.globalAlpha = 0.25;
-    ctx.scale(1, 0.25);
-    ctx.beginPath();
-    ctx.ellipse(0, drawH * 1.7, drawW * 0.32, drawH * 0.3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#000";
-    ctx.fill();
-    ctx.restore();
-    ctx.drawImage(sprite.img, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
+    // PC: ホイールで拡大縮小
+    scene.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      state.scale = Math.max(0.25, Math.min(4, state.scale * (e.deltaY < 0 ? 1.08 : 0.92)));
+      applyTransform();
+    }, { passive: false });
   }
 
-  function drawCover(src, w, h) {
+  function setSteady(on) { float.classList.toggle("steady", on); }
+
+  // 直近に2本指操作していたら、その指離しで起きる click(=塗り)を無視させる
+  function suppressTap() { return Date.now() - lastMultiTouch < 350; }
+
+  function rotate() { state.rot = (state.rot + 15) % 360; applyTransform(); }
+  function reset() { state.x = 0; state.y = 0; state.scale = 1; state.rot = 0; applyTransform(); }
+
+  function drawCover(ctx, src, w, h) {
     const sw = src.videoWidth || src.width;
     const sh = src.videoHeight || src.height;
     const scale = Math.max(w / sw, h / sh);
-    const dw = sw * scale;
-    const dh = sh * scale;
+    const dw = sw * scale, dh = sh * scale;
     ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
   }
 
-  // ---- 操作 ----
-  function bindGestures() {
-    const el = canvas;
+  /**
+   * いまの画面(カメラ + 現在のキャラ)を合成して PNG dataURL を返す(Promise)。
+   */
+  async function capture() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cv = document.createElement("canvas");
+    cv.width = vw * dpr; cv.height = vh * dpr;
+    const ctx = cv.getContext("2d");
+    ctx.scale(dpr, dpr);
 
-    el.addEventListener("pointerdown", (e) => {
-      el.setPointerCapture(e.pointerId);
-      gesture.dragging = true;
-      gesture.lastX = e.clientX;
-      gesture.lastY = e.clientY;
-    });
-    el.addEventListener("pointermove", (e) => {
-      if (!gesture.dragging || !sprite) return;
-      sprite.x += e.clientX - gesture.lastX;
-      sprite.y += e.clientY - gesture.lastY;
-      gesture.lastX = e.clientX;
-      gesture.lastY = e.clientY;
-    });
-    const end = (e) => {
-      gesture.dragging = false;
-      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
-    };
-    el.addEventListener("pointerup", end);
-    el.addEventListener("pointercancel", end);
+    if (video.readyState >= 2 && video.videoWidth) {
+      drawCover(ctx, video, vw, vh);
+    } else {
+      const grd = ctx.createLinearGradient(0, 0, 0, vh);
+      grd.addColorStop(0, "#2a1a5e");
+      grd.addColorStop(1, "#1b1140");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, vw, vh);
+    }
 
-    // ピンチ拡大縮小（touch）
-    el.addEventListener("touchmove", (e) => {
-      if (e.touches.length === 2 && sprite) {
-        e.preventDefault();
-        const d = dist(e.touches[0], e.touches[1]);
-        if (gesture.pinchDist) {
-          sprite.scale *= d / gesture.pinchDist;
-          sprite.scale = Math.max(0.2, Math.min(4, sprite.scale));
-        }
-        gesture.pinchDist = d;
-        gesture.dragging = false; // ピンチ中はドラッグしない
-      }
-    }, { passive: false });
-    el.addEventListener("touchend", () => { gesture.pinchDist = 0; });
+    const artCanvas = await Coloring.renderToCanvas(1024);
+    const px = tilt.x * 22, py = tilt.y * 16;
+    const cx = vw / 2 + state.x + px;
+    const cy = vh / 2 + state.y + py;
+    const size = state.base * state.scale;
 
-    // PC: ホイールで拡大縮小
-    el.addEventListener("wheel", (e) => {
-      if (!sprite) return;
-      e.preventDefault();
-      sprite.scale *= e.deltaY < 0 ? 1.08 : 0.92;
-      sprite.scale = Math.max(0.2, Math.min(4, sprite.scale));
-    }, { passive: false });
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(state.rot * Math.PI / 180);
+    ctx.drawImage(artCanvas, -size / 2, -size / 2, size, size);
+    ctx.restore();
+
+    return cv.toDataURL("image/png");
   }
 
-  function dist(a, b) {
-    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-  }
+  window.addEventListener("resize", () => {
+    if (running) { state.base = computeBase(); applyTransform(); }
+  });
 
-  function rotate() { if (sprite) sprite.rot = (sprite.rot + 15) % 360; }
-  function reset() {
-    if (!sprite) return;
-    sprite.x = window.innerWidth / 2;
-    sprite.y = window.innerHeight / 2;
-    sprite.scale = 1;
-    sprite.rot = 0;
-  }
-
-  // 現在の画面（カメラ+キャラ）を PNG dataURL で返す
-  function capture() {
-    return canvas.toDataURL("image/png");
-  }
-
-  window.addEventListener("resize", () => { if (running) resize(); });
-
-  global.AR = { start, stop, enableOrientation, bindGestures, rotate, reset, capture };
+  global.AR = { start, stop, enableOrientation, suppressTap, rotate, reset, capture };
   bindGestures();
 })(window);

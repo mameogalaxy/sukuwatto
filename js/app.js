@@ -1,12 +1,13 @@
 /**
  * 画面遷移と全体の組み立て
+ *
+ * 流れ: タイトル(キャラ選択) → AR ぬりえ(カメラ起動して、その場で塗る)
  */
 (function () {
   "use strict";
 
   const screens = {
     home: document.getElementById("screen-home"),
-    color: document.getElementById("screen-color"),
     ar: document.getElementById("screen-ar"),
   };
 
@@ -27,65 +28,51 @@
       card.innerHTML = `
         <div class="gallery-thumb">${tpl.svg}</div>
         <span class="gallery-name">${tpl.emoji} ${tpl.name}</span>`;
-      card.addEventListener("click", () => startColoring(tpl));
+      card.addEventListener("click", () => startAR(tpl));
       gallery.appendChild(card);
     });
   }
 
-  function startColoring(tpl) {
+  async function startAR(tpl) {
+    // iOS の傾きセンサー許可は「タップ直後に同期的に」呼ぶ必要があるため、
+    // カメラ起動(await)より前にここで要求する。
+    AR.enableOrientation();
     Coloring.loadTemplate(tpl);
     Coloring.setTool("fill");
-    show("color");
+    show("ar");
+    try {
+      await AR.start();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  // ---- ぬりえ画面 ----
+  // ---- もどる ----
   document.querySelectorAll('[data-action="back-home"]').forEach((b) =>
-    b.addEventListener("click", () => show("home"))
+    b.addEventListener("click", () => {
+      AR.stop();
+      show("home");
+    })
   );
 
-  document.querySelectorAll(".tool[data-tool]").forEach((b) =>
-    b.addEventListener("click", () => Coloring.setTool(b.dataset.tool))
-  );
-  document.getElementById("btn-undo").addEventListener("click", () => Coloring.undo());
-  document.getElementById("btn-clear").addEventListener("click", () => {
-    if (confirm("ぜんぶ けしますか？")) Coloring.clearAll();
+  // ---- ツール ----
+  const eraseBtn = document.getElementById("btn-erase");
+  eraseBtn.addEventListener("click", () => {
+    // けす ⇄ ぬる をトグル
+    const erasing = Coloring.state.tool === "erase";
+    Coloring.setTool(erasing ? "fill" : "erase");
+    eraseBtn.setAttribute("aria-pressed", String(!erasing));
   });
+  document.getElementById("btn-undo").addEventListener("click", () => Coloring.undo());
+  document.getElementById("btn-ar-rotate").addEventListener("click", () => AR.rotate());
+  document.getElementById("btn-ar-reset").addEventListener("click", () => AR.reset());
 
-  // help モーダル
+  // ---- help モーダル ----
   const helpModal = document.getElementById("modal-help");
   document.getElementById("btn-help").addEventListener("click", () => (helpModal.hidden = false));
   document.querySelectorAll('[data-action="close-help"]').forEach((b) =>
     b.addEventListener("click", () => (helpModal.hidden = true))
   );
-
-  // ---- AR へ ----
-  document.getElementById("btn-to-ar").addEventListener("click", async () => {
-    // iOS の傾きセンサー許可は「タップ直後」に同期的に呼ぶ必要があるため、
-    // カメラ起動(await)より前にここで要求する。
-    AR.enableOrientation();
-    try {
-      const c = await Coloring.renderToCanvas(1024);
-      const img = new Image();
-      img.onload = async () => {
-        show("ar");
-        await AR.start(img);
-      };
-      img.src = c.toDataURL("image/png");
-    } catch (e) {
-      alert("えがきだしに しっぱいしました");
-      console.error(e);
-    }
-  });
-
-  document.querySelectorAll('[data-action="back-color"]').forEach((b) =>
-    b.addEventListener("click", () => {
-      AR.stop();
-      show("color");
-    })
-  );
-
-  document.getElementById("btn-ar-rotate").addEventListener("click", () => AR.rotate());
-  document.getElementById("btn-ar-reset").addEventListener("click", () => AR.reset());
 
   // ---- さつえい ----
   const shotModal = document.getElementById("modal-shot");
@@ -93,13 +80,20 @@
   const shotDownload = document.getElementById("shot-download");
   const shotShare = document.getElementById("shot-share");
 
-  document.getElementById("btn-capture").addEventListener("click", () => {
-    const dataUrl = AR.capture();
+  document.getElementById("btn-capture").addEventListener("click", async () => {
+    let dataUrl;
+    try {
+      dataUrl = await AR.capture();
+    } catch (e) {
+      alert("さつえいに しっぱいしました");
+      console.error(e);
+      return;
+    }
     shotPreview.src = dataUrl;
     shotDownload.href = dataUrl;
     shotModal.hidden = false;
 
-    // Web Share API（対応端末のみ）
+    // Web Share API(対応端末のみ)
     if (navigator.canShare) {
       shotShare.hidden = false;
       shotShare.onclick = async () => {
