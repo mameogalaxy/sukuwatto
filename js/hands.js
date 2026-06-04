@@ -21,6 +21,9 @@ let lastTs = -1;
 
 // 指パッチン判定(手ごと)。まず しっかり開いてから(armed) 閉じた瞬間に1回だけ発火。
 const armed = [false, false];
+// パッチン成立の瞬間だけ 緑にフラッシュ(青→緑→青)。緑にする期限の時刻。
+const flashUntil = [0, 0];
+const FLASH_MS = 280;
 
 // 手の骨格(関節のつなぎ方)
 const HAND_CONNECTIONS = [
@@ -75,6 +78,7 @@ function stop() {
   if (window.AR && AR.setSteady) AR.setSteady(false);
   if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
   armed[0] = armed[1] = false;
+  flashUntil[0] = flashUntil[1] = 0;
 }
 
 function isActive() { return running; }
@@ -130,7 +134,6 @@ function handle(res) {
   const hands = (res && res.landmarks) || [];
   if (window.AR && AR.setSteady) AR.setSteady(hands.length > 0); // 手があるあいだは止めて狙いやすく
 
-  const closed = [false, false];
   for (let i = 0; i < hands.length && i < 2; i++) {
     const f = handFeatures(hands[i]);
     // 選択は「タップ」で行うので、手では選ばない(パッチンの発火だけ担当)
@@ -138,27 +141,29 @@ function handle(res) {
     // パッチン判定: ①しっかり開く(armed) → ②しっかり閉じた瞬間に1回だけ発火
     const openT = f.hs * 0.6;   // これより離れていたら「開いた」
     const closeT = f.hs * 0.28; // これより近づいたら「パッチン」
-    closed[i] = f.thumbMid < closeT;
     if (f.thumbMid > openT) armed[i] = true;
-    if (armed[i] && closed[i] && f.indexExtended) {
+    if (armed[i] && f.thumbMid < closeT && f.indexExtended) {
       armed[i] = false; // 再び開くまで次は発火しない
+      flashUntil[i] = performance.now() + FLASH_MS; // ★成立の瞬間だけ緑に
       if (window.Coloring && Coloring.snapPaint) Coloring.snapPaint();
     }
   }
   if (hands.length < 2) armed[1] = false;
 
-  drawHands(hands, closed);
+  drawHands(hands);
 }
 
 // 手の骨格(ハンドトラッキング)を描く。カメラ映像は出さず、手だけ見える。
-function drawHands(hands, closed) {
+function drawHands(hands) {
   if (!hctx) return;
   const w = window.innerWidth, h = window.innerHeight;
   hctx.clearRect(0, 0, w, h);
+  const now = performance.now();
 
   for (let i = 0; i < hands.length && i < 2; i++) {
     const pts = hands[i].map((p) => toScreen(p.x, p.y));
-    const accent = closed[i] ? "#7bd66b" : "#3b6dff"; // パッチンで緑
+    const flashing = now < flashUntil[i];
+    const accent = flashing ? "#7bd66b" : "#3b6dff"; // パッチンの瞬間だけ緑(青→緑→青)
 
     // 線(骨)
     hctx.lineCap = "round";
@@ -183,11 +188,11 @@ function drawHands(hands, closed) {
       hctx.fill();
     }
 
-    // 人差し指の先を 大きく強調(ねらい)
-    hctx.shadowBlur = 18;
+    // 人差し指の先を 大きく強調(ねらい)。パッチンの瞬間はポンッと大きく光る。
+    hctx.shadowBlur = flashing ? 30 : 18;
     hctx.fillStyle = accent;
     hctx.beginPath();
-    hctx.arc(pts[8].x, pts[8].y, 12, 0, Math.PI * 2);
+    hctx.arc(pts[8].x, pts[8].y, flashing ? 19 : 12, 0, Math.PI * 2);
     hctx.fill();
   }
   hctx.shadowBlur = 0;
