@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#1b1140" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=5" />
+  <link rel="stylesheet" href="css/styles.css?v=6" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -50,6 +50,12 @@
         </div>
       </div>
     </div>
+
+    <!-- キラキラ エフェクト層(UIの下・キャラの上) -->
+    <canvas id="fx-canvas" class="fx-canvas"></canvas>
+
+    <!-- 完成トースト -->
+    <div id="ar-toast" class="ar-toast" hidden>✨ かんせい！ ✨</div>
 
     <div class="ar-overlay-ui">
       <header class="topbar topbar-ar">
@@ -107,9 +113,10 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=5"></script>
-  <script src="js/coloring.js?v=5"></script>
-  <script src="js/ar.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/templates.js?v=6"></script>
+  <script src="js/fx.js?v=6"></script>
+  <script src="js/coloring.js?v=6"></script>
+  <script src="js/ar.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

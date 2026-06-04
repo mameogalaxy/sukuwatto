@@ -46,6 +46,34 @@
     }
   }
 
+  // ---- 完成したときの お祝い ----
+  const arFloat = document.getElementById("ar-float");
+  const toast = document.getElementById("ar-toast");
+  let toastTimer = null;
+  document.addEventListener("nurie:complete", () => {
+    // キャラの中心あたりで お祝いキラキラ
+    const rect = document.getElementById("svg-stage").getBoundingClientRect();
+    if (window.FX) window.FX.celebrate(rect.left + rect.width / 2, rect.top + rect.height / 2, rect.width / 2);
+    // うれしくてジャンプ
+    if (arFloat) {
+      arFloat.classList.remove("celebrate");
+      void arFloat.offsetWidth;
+      arFloat.classList.add("celebrate");
+      arFloat.addEventListener("animationend", () => arFloat.classList.remove("celebrate"), { once: true });
+    }
+    // トースト
+    if (toast) {
+      toast.hidden = false;
+      void toast.offsetWidth;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => { toast.hidden = true; }, 300);
+      }, 1800);
+    }
+  });
+
   // ---- 起動(まず画面を組み立てる。以降の配線で失敗してもギャラリーは出る) ----
   Coloring.buildPalette();
   buildGallery();

@@ -17,7 +17,14 @@
     color: "#ff5d73",
     tool: "fill", // "fill" | "erase"
     history: [], // {region, from, to}
+    painted: new Set(), // ユーザーが塗った領域(完成判定用)
+    total: 0, // 塗れる領域の数
+    completed: false,
   };
+
+  // ---- なぞり塗り(長押し＆ドラッグ)の状態 ----
+  const pointers = new Set();
+  let painting = false;
 
   // ---- パレット生成 ----
   function buildPalette() {
@@ -46,24 +53,50 @@
   function loadTemplate(tpl) {
     state.template = tpl;
     state.history = [];
+    state.painted = new Set();
+    state.completed = false;
     stage.innerHTML = tpl.svg;
     const svg = stage.querySelector("svg");
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-    svg.querySelectorAll(".region").forEach((region) => {
-      region.classList.add("colorable");
-      const paint = (e) => {
-        e.preventDefault();
-        // 2本指で動かした直後の指離しで起きる click は塗りとして扱わない
-        if (global.AR && global.AR.suppressTap && global.AR.suppressTap()) return;
-        applyColor(region);
-      };
-      region.addEventListener("click", paint);
-    });
+    const regions = svg.querySelectorAll(".region");
+    regions.forEach((region) => region.classList.add("colorable"));
+    state.total = regions.length;
+
+    bindPainting();
+    if (global.FX) global.FX.clear();
     updateUndoState();
   }
 
-  function applyColor(region) {
+  // 指でなぞって塗る。1本指=ぬる / 2本指=AR操作(ar.js)なので塗らない。
+  // stage 要素は使い回すので、ハンドラは置き換え。window 側は一度だけ登録。
+  function bindPainting() {
+    stage.onpointerdown = (e) => {
+      pointers.add(e.pointerId);
+      if (pointers.size > 1) { painting = false; return; }
+      painting = true;
+      paintAtPoint(e.clientX, e.clientY);
+    };
+    stage.onpointermove = (e) => {
+      if (!painting || pointers.size > 1) return;
+      paintAtPoint(e.clientX, e.clientY);
+    };
+  }
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) painting = false;
+  }
+  window.addEventListener("pointerup", endPointer);
+  window.addEventListener("pointercancel", endPointer);
+
+  function paintAtPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (el && el.classList && el.classList.contains("colorable")) {
+      applyColor(el, x, y);
+    }
+  }
+
+  function applyColor(region, px, py) {
     const target = state.tool === "erase" ? "#ffffff" : state.color;
     const from = region.getAttribute("fill") || "#ffffff";
     if (from.toLowerCase() === target.toLowerCase()) return;
@@ -73,13 +106,41 @@
     void region.getBoundingClientRect(); // reflow を強制
     region.classList.add("just-painted");
     state.history.push({ region, from, to: target });
+
+    // 塗った場所から キラキラ
+    if (state.tool !== "erase" && global.FX) {
+      const r = region.getBoundingClientRect();
+      const sx = px != null ? px : r.left + r.width / 2;
+      const sy = py != null ? py : r.top + r.height / 2;
+      global.FX.burst(sx, sy, target);
+    }
+
+    // 完成判定
+    if (state.tool === "erase") state.painted.delete(region);
+    else state.painted.add(region);
+    checkComplete();
+
     updateUndoState();
+  }
+
+  function checkComplete() {
+    if (state.completed) {
+      if (state.painted.size < state.total) state.completed = false; // 消したら解除
+      return;
+    }
+    if (state.total > 0 && state.painted.size >= state.total) {
+      state.completed = true;
+      document.dispatchEvent(new CustomEvent("nurie:complete"));
+    }
   }
 
   function undo() {
     const last = state.history.pop();
     if (!last) return;
     last.region.setAttribute("fill", last.from);
+    if ((last.from || "#ffffff").toLowerCase() === "#ffffff") state.painted.delete(last.region);
+    else state.painted.add(last.region);
+    checkComplete();
     updateUndoState();
   }
 
@@ -92,6 +153,8 @@
         region.setAttribute("fill", "#ffffff");
       }
     });
+    state.painted.clear();
+    state.completed = false;
     updateUndoState();
   }
 
