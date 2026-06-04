@@ -19,11 +19,9 @@ let video = null;
 let hcanvas = null, hctx = null;
 let lastTs = -1;
 
-// 指パッチン判定(手ごと)。まず しっかり開いてから(armed) 閉じた瞬間に1回だけ発火。
-const armed = [false, false];
-// パッチン成立の瞬間だけ 緑にフラッシュ(青→緑→青)。緑にする期限の時刻。
-const flashUntil = [0, 0];
-const FLASH_MS = 280;
+// 指パッチン: 指を合わせると「緑(チャージ)」→ 離した瞬間に塗る(青に戻る)。
+// 一度合わせてから離す必要がある(最初の青からは塗らない)。
+const pinchClosed = [false, false];
 
 // 手の骨格(関節のつなぎ方)
 const HAND_CONNECTIONS = [
@@ -77,8 +75,7 @@ function stop() {
   if (hctx) hctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
   if (window.AR && AR.setSteady) AR.setSteady(false);
   if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
-  armed[0] = armed[1] = false;
-  flashUntil[0] = flashUntil[1] = 0;
+  pinchClosed[0] = pinchClosed[1] = false;
 }
 
 function isActive() { return running; }
@@ -138,17 +135,19 @@ function handle(res) {
     const f = handFeatures(hands[i]);
     // 選択は「タップ」で行うので、手では選ばない(パッチンの発火だけ担当)
 
-    // パッチン判定: ①しっかり開く(armed) → ②しっかり閉じた瞬間に1回だけ発火
-    const openT = f.hs * 0.6;   // これより離れていたら「開いた」
-    const closeT = f.hs * 0.28; // これより近づいたら「パッチン」
-    if (f.thumbMid > openT) armed[i] = true;
-    if (armed[i] && f.thumbMid < closeT && f.indexExtended) {
-      armed[i] = false; // 再び開くまで次は発火しない
-      flashUntil[i] = performance.now() + FLASH_MS; // ★成立の瞬間だけ緑に
+    const openT = f.hs * 0.6;   // これより離れたら「開き(青)」
+    const closeT = f.hs * 0.28; // これより近づいたら「合わさる(緑)」
+
+    // ① 指を合わせる → 緑(チャージ)。まだ塗らない。
+    if (f.thumbMid < closeT && f.indexExtended) pinchClosed[i] = true;
+    // ② 合わせてから 離した瞬間 → ここで塗る(青に戻る)
+    if (pinchClosed[i] && f.thumbMid > openT) {
+      pinchClosed[i] = false;
       if (window.Coloring && Coloring.snapPaint) Coloring.snapPaint();
     }
   }
-  if (hands.length < 2) armed[1] = false;
+  // 映っていない手は状態リセット(誤発火ふせぐ)
+  for (let i = hands.length; i < 2; i++) pinchClosed[i] = false;
 
   drawHands(hands);
 }
@@ -158,12 +157,11 @@ function drawHands(hands) {
   if (!hctx) return;
   const w = window.innerWidth, h = window.innerHeight;
   hctx.clearRect(0, 0, w, h);
-  const now = performance.now();
 
   for (let i = 0; i < hands.length && i < 2; i++) {
     const pts = hands[i].map((p) => toScreen(p.x, p.y));
-    const flashing = now < flashUntil[i];
-    const accent = flashing ? "#7bd66b" : "#3b6dff"; // パッチンの瞬間だけ緑(青→緑→青)
+    const charging = pinchClosed[i];                 // 指を合わせている=緑(チャージ)
+    const accent = charging ? "#7bd66b" : "#3b6dff"; // 合わせると緑 / 離すと青(=塗る)
 
     // 線(骨)
     hctx.lineCap = "round";
@@ -188,11 +186,11 @@ function drawHands(hands) {
       hctx.fill();
     }
 
-    // 人差し指の先を 大きく強調(ねらい)。パッチンの瞬間はポンッと大きく光る。
-    hctx.shadowBlur = flashing ? 30 : 18;
+    // 人差し指の先を 大きく強調(ねらい)。合わせている間は大きく光る。
+    hctx.shadowBlur = charging ? 28 : 18;
     hctx.fillStyle = accent;
     hctx.beginPath();
-    hctx.arc(pts[8].x, pts[8].y, flashing ? 19 : 12, 0, Math.PI * 2);
+    hctx.arc(pts[8].x, pts[8].y, charging ? 17 : 12, 0, Math.PI * 2);
     hctx.fill();
   }
   hctx.shadowBlur = 0;
