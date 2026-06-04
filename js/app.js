@@ -86,16 +86,24 @@
   }
   btnHands.addEventListener("click", async () => {
     if (!window.Hands) { alert("手の にんしきが よみこめませんでした"); return; }
-    if (Hands.isActive()) { Hands.stop(); resetHandsBtn(); return; }
+    if (Hands.isActive()) { Hands.stop(); AR.stopCamera(); resetHandsBtn(); return; }
     btnHands.textContent = "⏳ よみこみ中";
     btnHands.disabled = true;
     try {
-      await Hands.start(); // カメラは最初から前面なので 切替不要
+      // 手の検出に 前面カメラを起動(映像は表示しない=顔は映らない)
+      const ok = await AR.setFacing("user");
+      if (!ok) {
+        alert("カメラを つかえませんでした。\nゆびで タッチして ぬってね。");
+        resetHandsBtn();
+        return;
+      }
+      await Hands.start();
       btnHands.classList.add("on");
       btnHands.textContent = "✋ ON";
     } catch (e) {
       console.error("hands start failed:", e);
       alert("手の にんしきを よみこめませんでした。\n（つうしん環境を かくにん）\nゆびで タッチして ぬってね。");
+      Hands.stop(); AR.stopCamera();
       resetHandsBtn();
     } finally {
       btnHands.disabled = false;

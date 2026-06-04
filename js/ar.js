@@ -40,13 +40,17 @@
     state.base = computeBase();
     applyTransform();
     running = true;
-    facing = "user"; applyMirror(); // 最初から前面(インカメ)＋鏡映し
+    facing = "user"; applyMirror();
 
-    await startCamera();
-
-    // カメラの許可が済んだあとに、権限不要な端末でだけ傾きを有効化
+    // カメラ映像は表示しない(顔を映さない)。「✋手で塗る」をONにしたときだけ起動する。
     enableOrientationAuto();
     loop();
+  }
+
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+    video.srcObject = null;
+    fallback.hidden = true;
   }
 
   function reasonText(err) {
@@ -116,11 +120,7 @@
   function stop() {
     running = false;
     if (rafId) cancelAnimationFrame(rafId);
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      stream = null;
-    }
-    video.srcObject = null;
+    stopCamera();
   }
 
   function orientationHandler(e) {
@@ -262,16 +262,13 @@
     const ctx = cv.getContext("2d");
     ctx.scale(dpr, dpr);
 
-    if (video.readyState >= 2 && video.videoWidth) {
-      if (mirrored) { ctx.save(); ctx.translate(vw, 0); ctx.scale(-1, 1); drawCover(ctx, video, vw, vh); ctx.restore(); }
-      else drawCover(ctx, video, vw, vh);
-    } else {
-      const grd = ctx.createLinearGradient(0, 0, 0, vh);
-      grd.addColorStop(0, "#2a1a5e");
-      grd.addColorStop(1, "#1b1140");
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, vw, vh);
-    }
+    // 背景アセット(顔は映さない。CSSの .ar-bg と同じスタジオ風グラデ)
+    const g = ctx.createRadialGradient(vw / 2, vh * 0.16, 0, vw / 2, vh * 0.16, Math.max(vw, vh) * 0.95);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.55, "#eaf0fb");
+    g.addColorStop(1, "#dde6f6");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, vw, vh);
 
     const artCanvas = await Coloring.renderToCanvas(1024);
     const px = tilt.x * 22, py = tilt.y * 16;
@@ -296,6 +293,6 @@
   const retryBtn = document.getElementById("btn-retry-cam");
   if (retryBtn) retryBtn.addEventListener("click", () => startCamera());
 
-  global.AR = { start, stop, startCamera, setFacing, isMirrored, requestOrientation, suppressTap, rotate, reset, moveBy, setSteady, isOverArt, capture };
+  global.AR = { start, stop, startCamera, stopCamera, setFacing, isMirrored, requestOrientation, suppressTap, rotate, reset, moveBy, setSteady, isOverArt, capture };
   bindGestures();
 })(window);

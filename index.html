@@ -6,10 +6,10 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <meta name="theme-color" content="#1b1140" />
+  <meta name="theme-color" content="#eef2f8" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=16" />
+  <link rel="stylesheet" href="css/styles.css?v=17" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -18,10 +18,10 @@
     <div class="home-inner">
       <div class="home-stars" aria-hidden="true"></div>
       <h1 class="home-title">
-        <span class="home-title-main">AR ぬりえ</span>
+        <span class="home-title-main"><span class="accent">AR</span> ぬりえ</span>
         <span class="home-title-sub">すくわっと</span>
       </h1>
-      <p class="home-lead">キャラクターを えらぶと、カメラの なかに とびだすよ。<br />手を かざして、まほうみたいに 色を しみこませよう！</p>
+      <p class="home-lead">すきな キャラクターを えらんで、<br />タップ＆ゆびパッチンで まほうみたいに ぬろう。</p>
 
       <h2 class="section-label">キャラクターを えらぶ</h2>
       <div id="template-gallery" class="gallery" role="list"></div>
@@ -30,6 +30,7 @@
 
   <!-- ===================== AR ぬりえ画面 ===================== -->
   <section id="screen-ar" class="screen screen-ar">
+    <div class="ar-bg" aria-hidden="true"></div>
     <video id="ar-video" class="ar-video" autoplay playsinline muted></video>
     <div id="ar-fallback" class="ar-fallback" hidden>
       <p id="ar-fallback-msg">カメラを つかえませんでした。</p>
@@ -177,11 +178,11 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=16"></script>
-  <script src="js/fx.js?v=16"></script>
-  <script src="js/coloring.js?v=16"></script>
-  <script src="js/ar.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
-  <script type="module" src="js/hands.js?v=16"></script>
+  <script src="js/templates.js?v=17"></script>
+  <script src="js/fx.js?v=17"></script>
+  <script src="js/coloring.js?v=17"></script>
+  <script src="js/ar.js?v=17"></script>
+  <script src="js/app.js?v=17"></script>
+  <script type="module" src="js/hands.js?v=17"></script>
 </body>
 </html>
