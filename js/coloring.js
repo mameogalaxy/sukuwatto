@@ -29,6 +29,8 @@
   let lockRegion = null; // 指: 1ストロークで塗る領域を固定(はみ出し防止)
   let handLock = null;   // 手: いま塗っている領域
   let handOff = 0;       // 手が領域から外れたフレーム数
+  let aimCand = null;    // 指パッチン: 選択切替の候補
+  let aimCnt = 0;        // 候補が続いたフレーム数(安定化)
 
   // ---- パレット生成 ----
   function buildPalette() {
@@ -142,27 +144,40 @@
   }
 
   // ---- 指パッチン方式: 指先の近くのパーツを「選択(光らせる)」→ パッチンで塗る ----
-  function aimAt(x, y) {
+  function nearestRegion(x, y) {
     if (!stage.querySelector("svg")) return null;
-    const regions = stage.querySelectorAll(".colorable");
     let best = null, bestD = Infinity;
-    regions.forEach((r) => {
+    stage.querySelectorAll(".colorable").forEach((r) => {
       const b = r.getBoundingClientRect();
       const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
       const d = (cx - x) ** 2 + (cy - y) ** 2;
       if (d < bestD) { bestD = d; best = r; }
     });
-    if (best !== state.aimRegion) {
-      if (state.aimRegion) state.aimRegion.classList.remove("aim");
-      state.aimRegion = best;
-      if (best) best.classList.add("aim");
-    }
     return best;
   }
 
-  function clearAim() {
+  function setHighlight(r) {
+    if (r === state.aimRegion) return;
     if (state.aimRegion) state.aimRegion.classList.remove("aim");
-    state.aimRegion = null;
+    state.aimRegion = r;
+    if (r) r.classList.add("aim");
+  }
+
+  // 選択は安定化: 別パーツが数フレーム続けて最寄りになって初めて切り替える
+  function aimAt(x, y) {
+    const r = nearestRegion(x, y);
+    if (r === state.aimRegion) { aimCand = null; aimCnt = 0; return state.aimRegion; }
+    if (r === aimCand) {
+      if (++aimCnt >= 3) { setHighlight(r); aimCand = null; aimCnt = 0; }
+    } else {
+      aimCand = r; aimCnt = 1;
+    }
+    return state.aimRegion;
+  }
+
+  function clearAim() {
+    setHighlight(null);
+    aimCand = null; aimCnt = 0;
   }
 
   // パッチン！ 選択中のパーツを 魔法みたいに塗る

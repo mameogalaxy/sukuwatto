@@ -19,8 +19,8 @@ let video = null;
 let cursorsEl = null;
 let lastTs = -1;
 
-// 指パッチンの直前状態(手ごと)。閉じる瞬間に1回だけ発火させる。
-const prevSnap = [false, false];
+// 指パッチン判定(手ごと)。まず しっかり開いてから(armed) 閉じた瞬間に1回だけ発火。
+const armed = [false, false];
 
 async function ensureModel() {
   if (landmarker) return;
@@ -51,7 +51,7 @@ function stop() {
   if (cursorsEl) cursorsEl.innerHTML = "";
   if (window.AR && AR.setSteady) AR.setSteady(false);
   if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
-  prevSnap[0] = prevSnap[1] = false;
+  armed[0] = armed[1] = false;
 }
 
 function isActive() { return running; }
@@ -87,7 +87,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// 1本の手の特徴量(指先・スナップ判定)を計算
+// 1本の手の特徴量(指先・親指と中指の距離・手の大きさ)を計算
 function handFeatures(lm) {
   const idx = toScreen(lm[8].x, lm[8].y);    // 人差し指の先(=ねらい)
   const thumb = toScreen(lm[4].x, lm[4].y);  // 親指の先
@@ -95,9 +95,12 @@ function handFeatures(lm) {
   const wrist = toScreen(lm[0].x, lm[0].y);  // 手首
   const mcp = toScreen(lm[9].x, lm[9].y);    // 中指のつけね
   const hs = dist(wrist, mcp) || 1;          // 手の大きさ(基準)
-  const indexExtended = dist(idx, wrist) > hs * 1.3; // 人差し指を のばしている
-  const snapClosed = dist(thumb, mid) < hs * 0.5;    // 親指と中指が くっつく=パッチン
-  return { idx, snap: indexExtended && snapClosed };
+  return {
+    idx,
+    hs,
+    thumbMid: dist(thumb, mid),                 // 親指と中指の先の距離
+    indexExtended: dist(idx, wrist) > hs * 1.2, // 人差し指を のばしている
+  };
 }
 
 function handle(res) {
@@ -107,22 +110,25 @@ function handle(res) {
 
   if (hands.length === 0) {
     if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
-    prevSnap[0] = prevSnap[1] = false;
+    armed[0] = armed[1] = false;
     return;
   }
 
   for (let i = 0; i < hands.length && i < 2; i++) {
     const f = handFeatures(hands[i]);
-    // 先頭の手の 指先の近くのパーツを ハイライト(ねらい)
+    // 先頭の手の 指先の近くのパーツを ハイライト(選択は安定化済み)
     if (i === 0 && window.Coloring && Coloring.aimAt) Coloring.aimAt(f.idx.x, f.idx.y);
-    // パッチンした瞬間(閉じる立ち上がり)に 1回だけ 塗る
-    if (f.snap && !prevSnap[i] && window.Coloring) {
-      if (Coloring.aimAt) Coloring.aimAt(f.idx.x, f.idx.y); // その手の ねらいに合わせる
-      if (Coloring.snapPaint) Coloring.snapPaint();
+
+    // パッチン判定: ①しっかり開く(armed) → ②しっかり閉じた瞬間に1回だけ発火
+    const openT = f.hs * 0.6;   // これより離れていたら「開いた」
+    const closeT = f.hs * 0.28; // これより近づいたら「パッチン」
+    if (f.thumbMid > openT) armed[i] = true;
+    if (armed[i] && f.thumbMid < closeT && f.indexExtended) {
+      armed[i] = false; // 再び開くまで次は発火しない
+      if (window.Coloring && Coloring.snapPaint) Coloring.snapPaint();
     }
-    prevSnap[i] = f.snap;
   }
-  if (hands.length < 2) prevSnap[1] = false;
+  if (hands.length < 2) armed[1] = false;
 }
 
 function renderCursors(hands) {
@@ -138,7 +144,7 @@ function renderCursors(hands) {
     const f = handFeatures(hands[i]);
     el.style.display = "block";
     el.style.transform = `translate(${f.idx.x}px, ${f.idx.y}px)`;
-    el.classList.toggle("snap", f.snap);
+    el.classList.toggle("snap", f.thumbMid < f.hs * 0.28); // 閉じてる時 緑に
   }
 }
 

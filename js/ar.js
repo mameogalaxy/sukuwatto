@@ -40,7 +40,7 @@
     state.base = computeBase();
     applyTransform();
     running = true;
-    facing = "environment"; applyMirror(); // 通常は背面カメラ
+    facing = "user"; applyMirror(); // 最初から前面(インカメ)＋鏡映し
 
     await startCamera();
 
