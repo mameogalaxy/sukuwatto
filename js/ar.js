@@ -39,23 +39,60 @@
     applyTransform();
     running = true;
 
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      video.srcObject = stream;
-      await video.play().catch(() => {});
-      fallback.hidden = true;
-    } catch (err) {
-      // カメラ不可(PC やキョカなし)でも、塗って保存はできるようにする
-      console.warn("camera unavailable:", err);
-      fallback.hidden = false;
-    }
+    await startCamera();
 
     // カメラの許可が済んだあとに、権限不要な端末でだけ傾きを有効化
     enableOrientationAuto();
     loop();
+  }
+
+  function reasonText(err) {
+    const n = (err && err.name) ? err.name : "Error";
+    const map = {
+      NotAllowedError: "カメラの きょかが ありません",
+      NotFoundError: "カメラが みつかりません",
+      NotReadableError: "カメラが ほかで つかわれています",
+      OverconstrainedError: "カメラの せっていに しっぱい",
+      SecurityError: "セキュリティの せいげん",
+      AbortError: "カメラの きどうが ちゅうだんされました",
+    };
+    return (map[n] || "カメラを つかえませんでした") + "（" + n + "）";
+  }
+
+  function showFallback(msg) {
+    const el = document.getElementById("ar-fallback-msg");
+    if (el && msg) el.textContent = msg;
+    fallback.hidden = false;
+  }
+
+  // カメラ取得(失敗理由を画面に出す。制約は environment → 何でも の順に試す)
+  async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showFallback("この ブラウザは カメラに たいおうしていません");
+      return false;
+    }
+    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+
+    const tries = [
+      { video: { facingMode: { ideal: "environment" } }, audio: false },
+      { video: true, audio: false },
+    ];
+    let lastErr = null;
+    for (const c of tries) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+        fallback.hidden = true;
+        return true;
+      } catch (e) {
+        lastErr = e;
+        if (e && e.name === "NotAllowedError") break; // 拒否なら再試行しない
+      }
+    }
+    console.warn("camera unavailable:", lastErr);
+    showFallback(reasonText(lastErr));
+    return false;
   }
 
   function stop() {
@@ -231,6 +268,10 @@
     if (running) { state.base = computeBase(); applyTransform(); }
   });
 
-  global.AR = { start, stop, requestOrientation, suppressTap, rotate, reset, capture };
+  // フォールバックの「もう一度カメラ」ボタン(ユーザー操作からの再試行)
+  const retryBtn = document.getElementById("btn-retry-cam");
+  if (retryBtn) retryBtn.addEventListener("click", () => startCamera());
+
+  global.AR = { start, stop, startCamera, requestOrientation, suppressTap, rotate, reset, capture };
   bindGestures();
 })(window);
