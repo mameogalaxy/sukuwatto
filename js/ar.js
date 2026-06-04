@@ -23,6 +23,7 @@
   let tilt = { x: 0, y: 0 };
   let bob = 0;
   let running = false;
+  let orientationOn = false;
 
   // ---- ジェスチャ状態 ----
   const gesture = { dragging: false, lastX: 0, lastY: 0, pinchDist: 0, pinchScale: 1 };
@@ -62,8 +63,31 @@
       fallback.hidden = false;
     }
 
-    enableOrientation();
     loop();
+  }
+
+  /**
+   * 端末の傾きセンサーを有効化する。
+   * iOS 13+ は requestPermission() が必須で、しかも「タップ操作の直後」に
+   * 同期的に呼ばないと失敗するため、await を挟む start() とは分け、
+   * ボタンの click ハンドラから直接呼べるようにしている。
+   */
+  function enableOrientation() {
+    if (orientationOn) return;
+    const handler = (e) => {
+      // gamma:左右(-90..90) beta:前後  少しだけ反映
+      if (e.gamma != null) tilt.x = Math.max(-1, Math.min(1, e.gamma / 45));
+      if (e.beta != null) tilt.y = Math.max(-1, Math.min(1, (e.beta - 45) / 45));
+    };
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission()
+        .then((s) => { if (s === "granted") { window.addEventListener("deviceorientation", handler); orientationOn = true; } })
+        .catch(() => {});
+    } else {
+      window.addEventListener("deviceorientation", handler);
+      orientationOn = true;
+    }
   }
 
   function stop() {
@@ -74,23 +98,6 @@
       stream = null;
     }
     video.srcObject = null;
-  }
-
-  function enableOrientation() {
-    const handler = (e) => {
-      // gamma:左右(-90..90) beta:前後  少しだけ反映
-      if (e.gamma != null) tilt.x = Math.max(-1, Math.min(1, e.gamma / 45));
-      if (e.beta != null) tilt.y = Math.max(-1, Math.min(1, (e.beta - 45) / 45));
-    };
-    // iOS 13+ は許可が必要。タップ時の start() 内なのでここで要求してよい。
-    if (typeof DeviceOrientationEvent !== "undefined" &&
-        typeof DeviceOrientationEvent.requestPermission === "function") {
-      DeviceOrientationEvent.requestPermission()
-        .then((s) => { if (s === "granted") window.addEventListener("deviceorientation", handler); })
-        .catch(() => {});
-    } else {
-      window.addEventListener("deviceorientation", handler);
-    }
   }
 
   function loop() {
@@ -212,6 +219,6 @@
 
   window.addEventListener("resize", () => { if (running) resize(); });
 
-  global.AR = { start, stop, bindGestures, rotate, reset, capture };
+  global.AR = { start, stop, enableOrientation, bindGestures, rotate, reset, capture };
   bindGestures();
 })(window);

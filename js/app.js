@@ -60,6 +60,9 @@
 
   // ---- AR へ ----
   document.getElementById("btn-to-ar").addEventListener("click", async () => {
+    // iOS の傾きセンサー許可は「タップ直後」に同期的に呼ぶ必要があるため、
+    // カメラ起動(await)より前にここで要求する。
+    AR.enableOrientation();
     try {
       const c = await Coloring.renderToCanvas(1024);
       const img = new Image();
