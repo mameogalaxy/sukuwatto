@@ -47,6 +47,10 @@
     }
   }
 
+  // ---- 起動(まず画面を組み立てる。以降の配線で失敗してもギャラリーは出る) ----
+  Coloring.buildPalette();
+  buildGallery();
+
   // ---- もどる ----
   document.querySelectorAll('[data-action="back-home"]').forEach((b) =>
     b.addEventListener("click", () => {
@@ -114,8 +118,4 @@
   document.querySelectorAll('[data-action="close-shot"]').forEach((b) =>
     b.addEventListener("click", () => (shotModal.hidden = true))
   );
-
-  // ---- 起動 ----
-  Coloring.buildPalette();
-  buildGallery();
 })();
