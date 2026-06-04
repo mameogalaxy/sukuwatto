@@ -223,4 +223,11 @@
   }, { passive: false });
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("dblclick", (e) => e.preventDefault());
+
+  // ---- PWA: Service Worker 登録(オフライン対応・Androidアプリ化の土台) ----
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((e) => console.warn("SW register failed", e));
+    });
+  }
 })();

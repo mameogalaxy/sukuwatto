@@ -79,3 +79,16 @@ manifest.webmanifest    PWA マニフェスト
   幅広い端末で動くようにしています（`getUserMedia` + `Canvas`）。
 - iOS 13+ ではモーションセンサー利用に許可が必要なため、AR 起動時に
   `DeviceOrientationEvent.requestPermission()` を呼び出します。
+
+## PWA / Android アプリ化
+
+このアプリは PWA 対応です（`manifest.webmanifest` + `sw.js` + アイコン `icons/`）。
+
+- **ホーム画面に追加**: iOS/Android のブラウザから「ホーム画面に追加」でアプリのように起動（全画面・スプラッシュ）。
+- **オフライン**: Service Worker が network-first でキャッシュ（オンライン時は常に最新、オフラインでも起動可）。手の認識モデルは CDN 配信のため初回はオンラインが必要。
+- **Google Play で配信する場合**: [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) で TWA（Trusted Web Activity）として梱包するのが簡単です。
+  1. HTTPS で公開（例: GitHub Pages）
+  2. `npx @bubblewrap/cli init --manifest https://mameogalaxy.github.io/sukuwatto/manifest.webmanifest`
+  3. `bubblewrap build` で APK/AAB を生成 → Play Console へ
+  4. ドメイン所有を示す Digital Asset Links（`assetlinks.json`）を設置
+  - カメラ権限（手の検出に使用・映像は表示しない）の説明を Play のデータ安全性に記載してください。

@@ -252,11 +252,16 @@ html, body {
 .modal-actions .btn { flex: 1 1 auto; text-align: center; text-decoration: none; }
 
 /* 完成パネル */
+@keyframes doneIn {
+  0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.03); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
 .ar-done {
   position: fixed; left: 50%; top: 42%; z-index: 6; transform: translate(-50%, -50%);
   width: min(86vw, 340px); background: rgba(255,255,255,0.96); border-radius: 26px;
   padding: 22px 18px 18px; text-align: center; box-shadow: var(--shadow); backdrop-filter: blur(10px);
-  animation: pop 0.3s ease;
+  animation: doneIn 0.32s cubic-bezier(.2,1.2,.4,1) both;
 }
 .ar-done-title { margin: 0 0 14px; font-weight: 800; font-size: 18px; }
 .ar-done-actions { display: flex; flex-direction: column; gap: 10px; }
