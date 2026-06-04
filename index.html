@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#1b1140" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=7" />
+  <link rel="stylesheet" href="css/styles.css?v=8" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -21,9 +21,17 @@
         <span class="home-title-main">AR ぬりえ</span>
         <span class="home-title-sub">すくわっと</span>
       </h1>
-      <p class="home-lead">キャラクターを えらぶと、カメラの なかに とびだすよ。<br />ゆびで さわって、まほうみたいに いろを つけよう！</p>
+      <p class="home-lead">しゃしんの モノの 色を かえたり、<br />うかぶ キャラを ぬったり して あそぼう！</p>
 
-      <h2 class="section-label">キャラクターを えらぶ</h2>
+      <button class="mode-magic-btn" id="mode-magic">
+        <span class="mode-emoji">🪄</span>
+        <span class="mode-text">
+          <span class="mode-title">マジック いろチェンジ</span>
+          <span class="mode-desc">しゃしんを とって、モノの 色を かえる</span>
+        </span>
+      </button>
+
+      <h2 class="section-label">または キャラを ぬる</h2>
       <div id="template-gallery" class="gallery" role="list"></div>
     </div>
   </section>
@@ -96,6 +104,52 @@
     </div>
   </section>
 
+  <!-- ===================== マジック いろチェンジ画面 ===================== -->
+  <section id="screen-magic" class="screen screen-magic">
+    <header class="topbar">
+      <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
+      <h2 class="topbar-title">マジック いろチェンジ</h2>
+      <span style="width:48px"></span>
+    </header>
+
+    <div class="magic-stage">
+      <canvas id="magic-canvas" class="magic-canvas"></canvas>
+
+      <!-- 写真がまだ無いとき -->
+      <div id="magic-start" class="magic-start">
+        <div class="magic-start-emoji">🪄📷</div>
+        <p>しゃしんの モノの 色を かえよう！<br />まず しゃしんを よういしてね。</p>
+        <label class="btn btn-primary magic-pick">
+          📷 カメラで とる
+          <input id="magic-cam" type="file" accept="image/*" capture="environment" hidden />
+        </label>
+        <label class="btn magic-pick">
+          🖼 しゃしんを えらぶ
+          <input id="magic-file" type="file" accept="image/*" hidden />
+        </label>
+      </div>
+
+      <div id="magic-hint" class="magic-hint" hidden>👆 かえたい モノを タッチ</div>
+    </div>
+
+    <div id="magic-tools" class="magic-bottom" hidden>
+      <div id="magic-palette" class="palette" aria-label="いろ"></div>
+      <label class="magic-thr">
+        えらぶ ひろさ
+        <input id="magic-threshold" type="range" min="14" max="110" value="42" />
+      </label>
+      <div class="ar-controls">
+        <button class="tool" id="magic-undo" title="もどす">
+          <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
+        </button>
+        <button class="btn-shutter" id="magic-save" title="ほぞん" aria-label="ほぞん"></button>
+        <button class="tool" id="magic-new" title="あたらしい写真">
+          <span class="tool-ico">📷</span><span class="tool-label">べつの写真</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== つかいかた モーダル ===================== -->
   <div id="modal-help" class="modal" hidden>
     <div class="modal-card">
@@ -124,10 +178,11 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=7"></script>
-  <script src="js/fx.js?v=7"></script>
-  <script src="js/coloring.js?v=7"></script>
-  <script src="js/ar.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/templates.js?v=8"></script>
+  <script src="js/fx.js?v=8"></script>
+  <script src="js/coloring.js?v=8"></script>
+  <script src="js/ar.js?v=8"></script>
+  <script src="js/magic.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

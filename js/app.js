@@ -9,6 +9,7 @@
   const screens = {
     home: document.getElementById("screen-home"),
     ar: document.getElementById("screen-ar"),
+    magic: document.getElementById("screen-magic"),
   };
 
   function show(name) {
@@ -76,6 +77,10 @@
     setTimeout(() => { const d = document.getElementById("ar-done"); if (d) d.hidden = false; }, 900);
   });
 
+  // ---- マジック いろチェンジ モード ----
+  document.getElementById("mode-magic").addEventListener("click", () => show("magic"));
+  if (window.Magic) Magic.wire();
+
   // ---- 起動(まず画面を組み立てる。以降の配線で失敗してもギャラリーは出る) ----
   Coloring.buildPalette();
   buildGallery();
@@ -137,20 +142,12 @@
   const shotDownload = document.getElementById("shot-download");
   const shotShare = document.getElementById("shot-share");
 
-  document.getElementById("btn-capture").addEventListener("click", async () => {
-    let dataUrl;
-    try {
-      dataUrl = await AR.capture();
-    } catch (e) {
-      alert("さつえいに しっぱいしました");
-      console.error(e);
-      return;
-    }
+  // 撮影/保存ダイアログ(AR・マジック 両モードで共用)
+  function showShot(dataUrl) {
+    if (!dataUrl) return;
     shotPreview.src = dataUrl;
     shotDownload.href = dataUrl;
     shotModal.hidden = false;
-
-    // Web Share API(対応端末のみ)
     if (navigator.canShare) {
       shotShare.hidden = false;
       shotShare.onclick = async () => {
@@ -158,7 +155,7 @@
           const blob = await (await fetch(dataUrl)).blob();
           const file = new File([blob], "ar-nurie.png", { type: "image/png" });
           if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: "AR ぬりえ" });
+            await navigator.share({ files: [file], title: "すくわっと" });
           }
         } catch (e) {
           console.warn("share canceled", e);
@@ -166,6 +163,16 @@
       };
     } else {
       shotShare.hidden = true;
+    }
+  }
+  window.showShot = showShot;
+
+  document.getElementById("btn-capture").addEventListener("click", async () => {
+    try {
+      showShot(await AR.capture());
+    } catch (e) {
+      alert("さつえいに しっぱいしました");
+      console.error(e);
     }
   });
   document.querySelectorAll('[data-action="close-shot"]').forEach((b) =>
