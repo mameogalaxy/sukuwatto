@@ -219,6 +219,13 @@
 
   function rotate() { state.rot = (state.rot + 15) % 360; applyTransform(); }
   function reset() { state.x = 0; state.y = 0; state.scale = 1; state.rot = 0; applyTransform(); }
+  // 手でつまんで動かす用
+  function moveBy(dx, dy) { state.x += dx; state.y += dy; applyTransform(); }
+  // 指先が キャラの上に乗っているか(画面座標)
+  function isOverArt(x, y) {
+    const r = art.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }
 
   function drawCover(ctx, src, w, h) {
     const sw = src.videoWidth || src.width;
@@ -272,6 +279,6 @@
   const retryBtn = document.getElementById("btn-retry-cam");
   if (retryBtn) retryBtn.addEventListener("click", () => startCamera());
 
-  global.AR = { start, stop, startCamera, requestOrientation, suppressTap, rotate, reset, capture };
+  global.AR = { start, stop, startCamera, requestOrientation, suppressTap, rotate, reset, moveBy, setSteady, isOverArt, capture };
   bindGestures();
 })(window);

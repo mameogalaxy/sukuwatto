@@ -77,9 +77,30 @@
     setTimeout(() => { const d = document.getElementById("ar-done"); if (d) d.hidden = false; }, 900);
   });
 
-  // ---- マジック いろチェンジ モード ----
-  document.getElementById("mode-magic").addEventListener("click", () => show("magic"));
-  if (window.Magic) Magic.wire();
+  // ---- 手で塗る(MediaPipe) トグル ----
+  const btnHands = document.getElementById("btn-hands");
+  function resetHandsBtn() {
+    btnHands.classList.remove("on");
+    btnHands.textContent = "✋ 手";
+    btnHands.disabled = false;
+  }
+  btnHands.addEventListener("click", async () => {
+    if (!window.Hands) { alert("手の にんしきが よみこめませんでした"); return; }
+    if (Hands.isActive()) { Hands.stop(); resetHandsBtn(); return; }
+    btnHands.textContent = "⏳ よみこみ中";
+    btnHands.disabled = true;
+    try {
+      await Hands.start();
+      btnHands.classList.add("on");
+      btnHands.textContent = "✋ ON";
+    } catch (e) {
+      console.error("hands start failed:", e);
+      alert("手の にんしきを よみこめませんでした。\n（つうしん環境を かくにん）\nゆびで タッチして ぬってね。");
+      resetHandsBtn();
+    } finally {
+      btnHands.disabled = false;
+    }
+  });
 
   // ---- 起動(まず画面を組み立てる。以降の配線で失敗してもギャラリーは出る) ----
   Coloring.buildPalette();
@@ -88,6 +109,7 @@
   // ---- もどる ----
   document.querySelectorAll('[data-action="back-home"]').forEach((b) =>
     b.addEventListener("click", () => {
+      if (window.Hands && Hands.isActive()) { Hands.stop(); resetHandsBtn(); }
       AR.stop();
       show("home");
     })

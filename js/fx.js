@@ -55,6 +55,28 @@
     spawn(x, y, color, { count: 16, power: 1 });
   }
 
+  // 手でなぞったとき: ふわっと色がにじむ(やわらかい光の粒)
+  function soak(x, y, color) {
+    for (let i = 0; i < 5; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 0.3 + Math.random() * 1.2;
+      particles.push({
+        x: x + (Math.random() - 0.5) * 16,
+        y: y + (Math.random() - 0.5) * 16,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 0.6,
+        life: 1,
+        decay: 0.018 + Math.random() * 0.02,
+        size: 6 + Math.random() * 8,
+        color: Math.random() < 0.4 ? "#ffffff" : color,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.15,
+        star: false,
+      });
+    }
+    if (!rafId) loop();
+  }
+
   // 完成したときの お祝い(キャラの周りに大きく)
   function celebrate(cx, cy, radius) {
     const r = radius || 140;

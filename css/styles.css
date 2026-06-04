@@ -301,3 +301,22 @@ html, body {
 .magic-thr input[type="range"] { flex: 1; accent-color: var(--accent); height: 26px; }
 .screen-magic .palette { margin-bottom: 12px; }
 .screen-magic .ar-controls { gap: 22px; }
+
+/* ---------- 手で塗る ---------- */
+.topbar-right { display: flex; gap: 6px; align-items: center; }
+.btn-hands.on { background: var(--accent); color: #2a1a00; }
+
+.hand-cursors { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+.hand-cursor {
+  position: absolute; left: 0; top: 0; width: 40px; height: 40px;
+  margin: -20px 0 0 -20px; border-radius: 50%; will-change: transform;
+  background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,210,63,0.4) 45%, transparent 70%);
+  box-shadow: 0 0 20px rgba(255,210,63,0.85);
+}
+.hand-cursor.pinch {
+  background: radial-gradient(circle, #fff, rgba(90,169,255,0.55) 45%, transparent 70%);
+  box-shadow: 0 0 22px rgba(90,169,255,0.95);
+}
+
+/* 手で塗るときの「じわっと染み込む」ゆっくり変化 */
+.colorable.soak { transition: fill 0.5s ease; }

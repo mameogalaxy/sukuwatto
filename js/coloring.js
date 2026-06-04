@@ -111,7 +111,16 @@
     }
   }
 
-  function applyColor(region, px, py) {
+  // 手(指先)で塗る: じわっと染み込む演出つき
+  function handPaint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (el && el.classList && el.classList.contains("colorable")) {
+      el.classList.add("soak"); // ゆっくり色が広がる
+      applyColor(el, x, y, true);
+    }
+  }
+
+  function applyColor(region, px, py, soft) {
     const target = resolveColor();
     const from = region.getAttribute("fill") || "#ffffff";
     if (from.toLowerCase() === target.toLowerCase()) return;
@@ -122,12 +131,13 @@
     region.classList.add("just-painted");
     state.history.push({ region, from, to: target });
 
-    // 塗った場所から キラキラ
+    // 塗った場所から エフェクト（手はやわらかく、指タップははじける）
     if (state.tool !== "erase" && global.FX) {
       const r = region.getBoundingClientRect();
       const sx = px != null ? px : r.left + r.width / 2;
       const sy = py != null ? py : r.top + r.height / 2;
-      global.FX.burst(sx, sy, target);
+      if (soft) global.FX.soak(sx, sy, target);
+      else global.FX.burst(sx, sy, target);
     }
 
     // 完成判定
@@ -220,5 +230,6 @@
     clearAll,
     setTool,
     renderToCanvas,
+    handPaint,
   };
 })(window);

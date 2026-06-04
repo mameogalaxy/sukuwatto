@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#1b1140" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=8" />
+  <link rel="stylesheet" href="css/styles.css?v=9" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -21,17 +21,9 @@
         <span class="home-title-main">AR ぬりえ</span>
         <span class="home-title-sub">すくわっと</span>
       </h1>
-      <p class="home-lead">しゃしんの モノの 色を かえたり、<br />うかぶ キャラを ぬったり して あそぼう！</p>
+      <p class="home-lead">キャラクターを えらぶと、カメラの なかに とびだすよ。<br />手を かざして、まほうみたいに 色を しみこませよう！</p>
 
-      <button class="mode-magic-btn" id="mode-magic">
-        <span class="mode-emoji">🪄</span>
-        <span class="mode-text">
-          <span class="mode-title">マジック いろチェンジ</span>
-          <span class="mode-desc">しゃしんを とって、モノの 色を かえる</span>
-        </span>
-      </button>
-
-      <h2 class="section-label">または キャラを ぬる</h2>
+      <h2 class="section-label">キャラクターを えらぶ</h2>
       <div id="template-gallery" class="gallery" role="list"></div>
     </div>
   </section>
@@ -62,6 +54,9 @@
     <!-- キラキラ エフェクト層(UIの下・キャラの上) -->
     <canvas id="fx-canvas" class="fx-canvas"></canvas>
 
+    <!-- 手の指先カーソル -->
+    <div id="hand-cursors" class="hand-cursors" aria-hidden="true"></div>
+
     <!-- 完成トースト -->
     <div id="ar-toast" class="ar-toast" hidden>✨ かんせい！ ✨</div>
 
@@ -80,7 +75,10 @@
       <header class="topbar topbar-ar">
         <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
         <span id="ar-hint" class="ar-hint">タップで ぬる ・ 2ほんゆびで うごかす</span>
-        <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
+        <span class="topbar-right">
+          <button class="btn btn-ghost btn-hands" id="btn-hands" title="手で塗る">✋ 手</button>
+          <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
+        </span>
       </header>
 
       <div class="ar-bottom">
@@ -157,8 +155,9 @@
       <ol>
         <li>📷 カメラに キャラクターが とびだす</li>
         <li>🎨 いろを えらぶ</li>
-        <li>👆 キャラクターを タッチして ぬる</li>
-        <li>✌️ 2ほんゆびで うごかす・大きさ・まわす</li>
+        <li>👆 キャラを タッチして ぬる（or ✌️2本指で うごかす）</li>
+        <li>✋「手」ボタン → カメラに 手を かざして、<br />　ゆびで ふれると 色が しみこむ！</li>
+        <li>🤏 おやゆびと 人さしゆびで つまむと うごかせる</li>
         <li>⚪ ボタンで さつえい！</li>
       </ol>
       <button class="btn btn-primary" data-action="close-help">わかった！</button>
@@ -178,11 +177,11 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=8"></script>
-  <script src="js/fx.js?v=8"></script>
-  <script src="js/coloring.js?v=8"></script>
-  <script src="js/ar.js?v=8"></script>
-  <script src="js/magic.js?v=8"></script>
-  <script src="js/app.js?v=8"></script>
+  <script src="js/templates.js?v=9"></script>
+  <script src="js/fx.js?v=9"></script>
+  <script src="js/coloring.js?v=9"></script>
+  <script src="js/ar.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
+  <script type="module" src="js/hands.js?v=9"></script>
 </body>
 </html>
