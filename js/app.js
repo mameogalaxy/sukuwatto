@@ -38,6 +38,7 @@
     // (傾きセンサーはカメラ確立後に、権限不要な端末でだけ自動で有効化される)
     Coloring.loadTemplate(tpl);
     Coloring.setTool("fill");
+    const d = document.getElementById("ar-done"); if (d) d.hidden = true;
     show("ar");
     try {
       await AR.start();
@@ -61,7 +62,7 @@
       arFloat.classList.add("celebrate");
       arFloat.addEventListener("animationend", () => arFloat.classList.remove("celebrate"), { once: true });
     }
-    // トースト
+    // トースト → 少し見せてから「つぎどうする？」パネル
     if (toast) {
       toast.hidden = false;
       void toast.offsetWidth;
@@ -70,8 +71,9 @@
       toastTimer = setTimeout(() => {
         toast.classList.remove("show");
         setTimeout(() => { toast.hidden = true; }, 300);
-      }, 1800);
+      }, 1600);
     }
+    setTimeout(() => { const d = document.getElementById("ar-done"); if (d) d.hidden = false; }, 900);
   });
 
   // ---- 起動(まず画面を組み立てる。以降の配線で失敗してもギャラリーは出る) ----
@@ -96,7 +98,31 @@
   });
   document.getElementById("btn-undo").addEventListener("click", () => Coloring.undo());
   document.getElementById("btn-ar-rotate").addEventListener("click", () => AR.rotate());
-  document.getElementById("btn-ar-reset").addEventListener("click", () => AR.reset());
+  // やりなおし: 色を全部消して、位置も中央に戻す
+  document.getElementById("btn-ar-reset").addEventListener("click", () => {
+    Coloring.clearAll();
+    AR.reset();
+    hideDone();
+  });
+
+  // ---- 完成パネル ----
+  const donePanel = document.getElementById("ar-done");
+  function hideDone() { if (donePanel) donePanel.hidden = true; }
+  document.getElementById("done-close").addEventListener("click", hideDone);
+  document.getElementById("done-shot").addEventListener("click", () => {
+    hideDone();
+    document.getElementById("btn-capture").click();
+  });
+  document.getElementById("done-again").addEventListener("click", () => {
+    Coloring.clearAll();
+    AR.reset();
+    hideDone();
+  });
+  document.getElementById("done-next").addEventListener("click", () => {
+    hideDone();
+    AR.stop();
+    show("home");
+  });
 
   // ---- help モーダル ----
   const helpModal = document.getElementById("modal-help");

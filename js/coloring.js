@@ -29,6 +29,12 @@
   // ---- パレット生成 ----
   function buildPalette() {
     paletteEl.innerHTML = "";
+    const selectSwatch = (sw, value) => {
+      state.color = value;
+      setTool("fill"); // 色を選んだら自動で「ぬる」モードに
+      paletteEl.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("is-selected", s === sw));
+    };
+
     global.NurieTemplates.palette.forEach((c, i) => {
       const sw = document.createElement("button");
       sw.className = "swatch";
@@ -37,16 +43,25 @@
       sw.setAttribute("role", "option");
       sw.setAttribute("aria-label", "いろ " + (i + 1));
       if (c === state.color) sw.classList.add("is-selected");
-      sw.addEventListener("click", () => {
-        state.color = c;
-        // 色を選んだら自動で「ぬる」モードに戻す
-        setTool("fill");
-        paletteEl
-          .querySelectorAll(".swatch")
-          .forEach((s) => s.classList.toggle("is-selected", s === sw));
-      });
+      sw.addEventListener("click", () => selectSwatch(sw, c));
       paletteEl.appendChild(sw);
     });
+
+    // 🌈 にじいろブラシ(塗るたびに色がかわる魔法の筆)
+    const rainbow = document.createElement("button");
+    rainbow.className = "swatch swatch-rainbow";
+    rainbow.dataset.color = "rainbow";
+    rainbow.setAttribute("role", "option");
+    rainbow.setAttribute("aria-label", "にじいろ");
+    rainbow.addEventListener("click", () => selectSwatch(rainbow, "rainbow"));
+    paletteEl.appendChild(rainbow);
+  }
+
+  // いま塗る色を決める(にじいろ ならランダムな鮮やか色)
+  function resolveColor() {
+    if (state.tool === "erase") return "#ffffff";
+    if (state.color === "rainbow") return "hsl(" + Math.floor(Math.random() * 360) + ", 85%, 62%)";
+    return state.color;
   }
 
   // ---- テンプレート読み込み ----
@@ -97,7 +112,7 @@
   }
 
   function applyColor(region, px, py) {
-    const target = state.tool === "erase" ? "#ffffff" : state.color;
+    const target = resolveColor();
     const from = region.getAttribute("fill") || "#ffffff";
     if (from.toLowerCase() === target.toLowerCase()) return;
     region.setAttribute("fill", target);

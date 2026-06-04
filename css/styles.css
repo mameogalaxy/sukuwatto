@@ -189,6 +189,29 @@ html, body {
 }
 .swatch.is-selected { border-color: var(--accent-2); transform: scale(1.2); box-shadow: 0 0 0 3px var(--accent-2) inset, 0 2px 6px rgba(0,0,0,0.4); }
 .swatch:active { transform: scale(0.9); }
+/* 🌈 にじいろブラシ */
+.swatch-rainbow {
+  background: conic-gradient(#ff5d73, #ffd23f, #7bd66b, #5aa9ff, #9b6dff, #ff8fcf, #ff5d73);
+}
+.swatch-rainbow::after { content: "🌈"; font-size: 16px; display: grid; place-items: center; }
+
+/* 完成後「つぎどうする？」パネル */
+.ar-done {
+  position: fixed; left: 50%; top: 44%; z-index: 6;
+  transform: translate(-50%, -50%);
+  width: min(86vw, 340px);
+  background: rgba(28, 18, 64, 0.92); border: 2px solid #ffffff33;
+  border-radius: 22px; padding: 20px 18px 18px; text-align: center;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  animation: pop 0.3s ease;
+}
+.ar-done-title { margin: 0 0 14px; font-weight: 800; color: var(--accent-2); font-size: 18px; }
+.ar-done-actions { display: flex; flex-direction: column; gap: 10px; }
+.ar-done-actions .btn { font-size: 16px; padding: 12px; }
+.ar-done-close {
+  position: absolute; top: 8px; right: 10px; width: 34px; height: 34px;
+  border: none; border-radius: 50%; background: #ffffff22; color: #fff; font-size: 20px; cursor: pointer;
+}
 
 .ar-controls {
   display: flex; align-items: center; justify-content: center; gap: 14px;
