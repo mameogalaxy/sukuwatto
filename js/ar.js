@@ -53,6 +53,8 @@
       fallback.hidden = false;
     }
 
+    // カメラの許可が済んだあとに、権限不要な端末でだけ傾きを有効化
+    enableOrientationAuto();
     loop();
   }
 
@@ -66,26 +68,48 @@
     video.srcObject = null;
   }
 
+  function orientationHandler(e) {
+    if (e.gamma != null) tilt.x = Math.max(-1, Math.min(1, e.gamma / 45));
+    if (e.beta != null) tilt.y = Math.max(-1, Math.min(1, (e.beta - 45) / 45));
+  }
+
   /**
-   * 端末の傾きセンサーを有効化。
-   * iOS 13+ は requestPermission() を「タップ直後に同期的に」呼ぶ必要があるため、
-   * await を挟む start() とは分け、click ハンドラから直接呼べるようにしている。
+   * 傾きセンサー(おまけのパララックス)を有効化。
+   *
+   * 重要: iOS は「1回のユーザー操作につき許可ダイアログは1つ」までしか出せない。
+   * ここでカメラと同じタップ内に DeviceOrientationEvent.requestPermission() を呼ぶと、
+   * カメラの getUserMedia がはじかれてしまう。よってカメラを最優先にし、
+   * 権限が不要な端末(Android など)でだけ自動で有効化する。
+   * (iOS でも、ユーザーが「ゆらす」ボタンを押したときだけ別途要求する)
    */
-  function enableOrientation() {
+  function enableOrientationAuto() {
     if (orientationOn) return;
-    const handler = (e) => {
-      if (e.gamma != null) tilt.x = Math.max(-1, Math.min(1, e.gamma / 45));
-      if (e.beta != null) tilt.y = Math.max(-1, Math.min(1, (e.beta - 45) / 45));
-    };
     if (typeof DeviceOrientationEvent !== "undefined" &&
         typeof DeviceOrientationEvent.requestPermission === "function") {
-      DeviceOrientationEvent.requestPermission()
-        .then((s) => { if (s === "granted") { window.addEventListener("deviceorientation", handler); orientationOn = true; } })
-        .catch(() => {});
-    } else {
-      window.addEventListener("deviceorientation", handler);
-      orientationOn = true;
+      return; // iOS: ここでは要求しない(カメラ優先)
     }
+    window.addEventListener("deviceorientation", orientationHandler);
+    orientationOn = true;
+  }
+
+  /** iOS 用: ユーザー操作から明示的に傾き許可を求める */
+  function requestOrientation() {
+    if (orientationOn) return Promise.resolve(false);
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      return DeviceOrientationEvent.requestPermission()
+        .then((s) => {
+          if (s === "granted") {
+            window.addEventListener("deviceorientation", orientationHandler);
+            orientationOn = true;
+            return true;
+          }
+          return false;
+        })
+        .catch(() => false);
+    }
+    enableOrientationAuto();
+    return Promise.resolve(orientationOn);
   }
 
   function applyTransform() {
@@ -207,6 +231,6 @@
     if (running) { state.base = computeBase(); applyTransform(); }
   });
 
-  global.AR = { start, stop, enableOrientation, suppressTap, rotate, reset, capture };
+  global.AR = { start, stop, requestOrientation, suppressTap, rotate, reset, capture };
   bindGestures();
 })(window);

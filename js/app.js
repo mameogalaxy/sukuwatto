@@ -34,9 +34,8 @@
   }
 
   async function startAR(tpl) {
-    // iOS の傾きセンサー許可は「タップ直後に同期的に」呼ぶ必要があるため、
-    // カメラ起動(await)より前にここで要求する。
-    AR.enableOrientation();
+    // iOS は「1タップ＝許可1つ」のため、このタップはカメラ起動に専念させる。
+    // (傾きセンサーはカメラ確立後に、権限不要な端末でだけ自動で有効化される)
     Coloring.loadTemplate(tpl);
     Coloring.setTool("fill");
     show("ar");
