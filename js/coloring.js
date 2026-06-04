@@ -23,6 +23,8 @@
     aimRegion: null, // 指パッチン: いま選択中(光っている)パーツ
   };
 
+  const SVGNS = "http://www.w3.org/2000/svg";
+
   // ---- なぞり塗り(長押し＆ドラッグ)の状態 ----
   const pointers = new Set();
   let painting = false;
@@ -31,6 +33,8 @@
   let handOff = 0;       // 手が領域から外れたフレーム数
   let aimCand = null;    // 指パッチン: 選択切替の候補
   let aimCnt = 0;        // 候補が続いたフレーム数(安定化)
+  const fillAnims = new WeakMap(); // region -> 実行中アニメのトークン
+  let gradSeq = 0;
 
   // ---- パレット生成 ----
   function buildPalette() {
@@ -53,21 +57,28 @@
       paletteEl.appendChild(sw);
     });
 
-    // 🌈 にじいろブラシ(塗るたびに色がかわる魔法の筆)
-    const rainbow = document.createElement("button");
-    rainbow.className = "swatch swatch-rainbow";
-    rainbow.dataset.color = "rainbow";
-    rainbow.setAttribute("role", "option");
-    rainbow.setAttribute("aria-label", "にじいろ");
-    rainbow.addEventListener("click", () => selectSwatch(rainbow, "rainbow"));
-    paletteEl.appendChild(rainbow);
+    // 🎨 すきな色をえらぶ(カラーピッカー)
+    const picker = document.createElement("label");
+    picker.className = "swatch swatch-custom";
+    picker.setAttribute("aria-label", "すきな いろ");
+    const input = document.createElement("input");
+    input.type = "color";
+    input.value = "#22c1ff";
+    input.className = "swatch-color-input";
+    picker.appendChild(input);
+    const apply = () => {
+      picker.style.background = input.value;
+      picker.classList.add("chosen");
+      selectSwatch(picker, input.value);
+    };
+    input.addEventListener("input", apply);
+    input.addEventListener("change", apply);
+    paletteEl.appendChild(picker);
   }
 
-  // いま塗る色を決める(にじいろ ならランダムな鮮やか色)
+  // いま塗る色を決める
   function resolveColor() {
-    if (state.tool === "erase") return "#ffffff";
-    if (state.color === "rainbow") return "hsl(" + Math.floor(Math.random() * 360) + ", 85%, 62%)";
-    return state.color;
+    return state.tool === "erase" ? "#ffffff" : state.color;
   }
 
   // ---- テンプレート読み込み ----
@@ -136,7 +147,7 @@
     if (!el) return;
     if (lockRegion === null) {
       lockRegion = el;
-      applyColor(el, x, y);
+      applyColor(el, x, y, "burst");
     }
     // lockRegion と同じ/別 いずれも、ここでは追加で塗らない
   }
@@ -148,7 +159,7 @@
       handOff = 0;
       if (handLock === null) {
         handLock = el;
-        applyColor(el, x, y, true);
+        applyColor(el, x, y, "soak");
       }
       // 別領域に ずれても 塗らない（はみ出し防止）
     } else if (++handOff > 4) {
@@ -199,31 +210,98 @@
     if (!r) return;
     const b = r.getBoundingClientRect();
     const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
-    applyColor(r, cx, cy, true);
-    if (global.FX) global.FX.magic(cx, cy, resolveColor());
+    applyColor(r, cx, cy, "magic");
     // 選択は残す(色を変えて もう一度パッチンも可。別の所は タップで選び直す)
   }
 
-  function applyColor(region, px, py, soft) {
+  function currentSolid(region) {
+    return region.dataset.solid || region.getAttribute("fill") || "#ffffff";
+  }
+
+  function getDefs() {
+    const svg = stage.querySelector("svg");
+    let defs = svg.querySelector("defs.paint-defs");
+    if (!defs) {
+      defs = document.createElementNS(SVGNS, "defs");
+      defs.setAttribute("class", "paint-defs");
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    return defs;
+  }
+
+  function setSolid(region, color) {
+    fillAnims.set(region, {}); // 実行中アニメを無効化
+    region.setAttribute("fill", color);
+    region.dataset.solid = color;
+  }
+
+  // 下から上へ ジュワッと満ちていく(SVG縦グラデを実アニメーション)
+  function animateFill(region, fromColor, toColor) {
+    const defs = getDefs();
+    const id = "pf" + (++gradSeq);
+    const grad = document.createElementNS(SVGNS, "linearGradient");
+    grad.setAttribute("id", id);
+    grad.setAttribute("x1", "0"); grad.setAttribute("y1", "1"); // 下
+    grad.setAttribute("x2", "0"); grad.setAttribute("y2", "0"); // 上
+    const stops = [];
+    for (let i = 0; i < 4; i++) {
+      const st = document.createElementNS(SVGNS, "stop");
+      grad.appendChild(st); stops.push(st);
+    }
+    defs.appendChild(grad);
+    region.setAttribute("fill", "url(#" + id + ")");
+
+    const token = {};
+    fillAnims.set(region, token);
+    const soft = 0.22, dur = 720, t0 = performance.now();
+    const clamp = (v) => Math.max(0, Math.min(1, v));
+    const set = (st, off, col) => { st.setAttribute("offset", off); st.setAttribute("stop-color", col); };
+
+    function frame(now) {
+      if (fillAnims.get(region) !== token) { grad.remove(); return; } // 取り消された
+      const p = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 2); // ease-out
+      const b = -soft + e * (1 + 2 * soft); // 波面の高さ
+      set(stops[0], 0, toColor);
+      set(stops[1], clamp(b), toColor);
+      set(stops[2], clamp(b + soft), fromColor);
+      set(stops[3], 1, fromColor);
+      if (p < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        region.setAttribute("fill", toColor);
+        region.dataset.solid = toColor;
+        grad.remove();
+        fillAnims.delete(region);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // fx: "burst"(指タップ) / "magic"(指パッチン) / "soak"(やわらか) / null
+  function applyColor(region, px, py, fx) {
     const target = resolveColor();
-    const from = region.getAttribute("fill") || "#ffffff";
+    const from = currentSolid(region);
     if (from.toLowerCase() === target.toLowerCase()) return;
-    // じわっと染み込む（消すときは すぐ）
-    if (state.tool === "erase") region.classList.remove("soak");
-    else region.classList.add("soak");
-    region.setAttribute("fill", target);
-    // ぷにっと反応（クラスを付け直してアニメを再生）
+
+    if (state.tool === "erase") {
+      setSolid(region, target); // 消すのは すぐ
+    } else {
+      animateFill(region, from, target); // 下から上へ ジュワッ
+    }
+    // ぷにっと反応
     region.classList.remove("just-painted");
-    void region.getBoundingClientRect(); // reflow を強制
+    void region.getBoundingClientRect();
     region.classList.add("just-painted");
     state.history.push({ region, from, to: target });
 
-    // 塗った場所から エフェクト（手はやわらかく、指タップははじける）
+    // エフェクト
     if (state.tool !== "erase" && global.FX) {
       const r = region.getBoundingClientRect();
       const sx = px != null ? px : r.left + r.width / 2;
       const sy = py != null ? py : r.top + r.height / 2;
-      if (soft) global.FX.soak(sx, sy, target);
+      if (fx === "magic") global.FX.magic(sx, sy, target);
+      else if (fx === "soak") global.FX.soak(sx, sy, target);
       else global.FX.burst(sx, sy, target);
     }
 
@@ -249,7 +327,7 @@
   function undo() {
     const last = state.history.pop();
     if (!last) return;
-    last.region.setAttribute("fill", last.from);
+    setSolid(last.region, last.from);
     if ((last.from || "#ffffff").toLowerCase() === "#ffffff") state.painted.delete(last.region);
     else state.painted.add(last.region);
     checkComplete();
@@ -259,11 +337,11 @@
   function clearAll() {
     if (!state.template) return;
     stage.querySelectorAll(".region").forEach((region) => {
-      const from = region.getAttribute("fill") || "#ffffff";
+      const from = currentSolid(region);
       if (from.toLowerCase() !== "#ffffff") {
         state.history.push({ region, from, to: "#ffffff" });
-        region.setAttribute("fill", "#ffffff");
       }
+      setSolid(region, "#ffffff");
     });
     state.painted.clear();
     state.completed = false;
