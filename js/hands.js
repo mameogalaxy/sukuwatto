@@ -109,15 +109,13 @@ function handle(res) {
   if (window.AR && AR.setSteady) AR.setSteady(hands.length > 0); // 手があるあいだは止めて狙いやすく
 
   if (hands.length === 0) {
-    if (window.Coloring && Coloring.clearAim) Coloring.clearAim();
-    armed[0] = armed[1] = false;
+    armed[0] = armed[1] = false; // 選択(タップ)は保持。手が外れても消さない
     return;
   }
 
   for (let i = 0; i < hands.length && i < 2; i++) {
     const f = handFeatures(hands[i]);
-    // 先頭の手の 指先の近くのパーツを ハイライト(選択は安定化済み)
-    if (i === 0 && window.Coloring && Coloring.aimAt) Coloring.aimAt(f.idx.x, f.idx.y);
+    // 選択は「タップ」で行うので、手では選ばない(パッチンの発火だけ担当)
 
     // パッチン判定: ①しっかり開く(armed) → ②しっかり閉じた瞬間に1回だけ発火
     const openT = f.hs * 0.6;   // これより離れていたら「開いた」

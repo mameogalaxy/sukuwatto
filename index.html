@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#1b1140" />
   <title>すくわっと AR ぬりえ</title>
   <meta name="description" content="ARで空間に浮かんだキャラクターを、指でその場でぬろう！" />
-  <link rel="stylesheet" href="css/styles.css?v=13" />
+  <link rel="stylesheet" href="css/styles.css?v=14" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
@@ -74,7 +74,7 @@
     <div class="ar-overlay-ui">
       <header class="topbar topbar-ar">
         <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
-        <span id="ar-hint" class="ar-hint">タップ or ✋手で ねらって 指パッチン！</span>
+        <span id="ar-hint" class="ar-hint">パーツを タップ → 指パッチンで ぬる！</span>
         <span class="topbar-right">
           <button class="btn btn-ghost btn-hands" id="btn-hands" title="手で塗る">✋ 手</button>
           <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
@@ -154,12 +154,12 @@
       <h3>つかいかた</h3>
       <ol>
         <li>🎨 いろを えらぶ</li>
-        <li>👆 キャラを タッチしても ぬれるよ</li>
+        <li>👆 ぬりたい パーツを タッチして えらぶ（ピカッと ひかる）</li>
         <li>✋「手」ボタン → カメラに 手を かざす</li>
-        <li>☝️ ぬりたい パーツに 手を むけると ピカッと ひかる</li>
-        <li>🫰 ゆびパッチン（おやゆび＋なかゆび）で、<br />　まほうみたいに ポンッと ぬれる！</li>
+        <li>🫰 ゆびパッチン（おやゆび＋なかゆび）で、<br />　えらんだ ところが まほうみたいに ぬれる！</li>
         <li>⚪ ボタンで さつえい！</li>
       </ol>
+      <p style="font-size:12px;color:var(--muted);margin:0">※「手」ボタンを おさないときは、タッチで そのまま ぬれます</p>
       <button class="btn btn-primary" data-action="close-help">わかった！</button>
     </div>
   </div>
@@ -177,11 +177,11 @@
     </div>
   </div>
 
-  <script src="js/templates.js?v=13"></script>
-  <script src="js/fx.js?v=13"></script>
-  <script src="js/coloring.js?v=13"></script>
-  <script src="js/ar.js?v=13"></script>
-  <script src="js/app.js?v=13"></script>
-  <script type="module" src="js/hands.js?v=13"></script>
+  <script src="js/templates.js?v=14"></script>
+  <script src="js/fx.js?v=14"></script>
+  <script src="js/coloring.js?v=14"></script>
+  <script src="js/ar.js?v=14"></script>
+  <script src="js/app.js?v=14"></script>
+  <script type="module" src="js/hands.js?v=14"></script>
 </body>
 </html>

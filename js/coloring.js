@@ -90,20 +90,33 @@
     updateUndoState();
   }
 
+  // 手モードが ON か
+  function handActive() {
+    return !!(global.Hands && global.Hands.isActive && global.Hands.isActive());
+  }
+
   // 指でなぞって塗る。1本指=ぬる / 2本指=AR操作(ar.js)なので塗らない。
-  // ★ はみ出し防止: 1ストロークでは「最初に触れた領域」だけを塗る。
+  // ★ 手モードON: タップ=「塗る場所の選択」(光るだけ)。パッチンで塗る。
+  // ★ 手モードOFF: タップ=その場で塗る(はみ出し防止つき)。
   function bindPainting() {
     stage.onpointerdown = (e) => {
       pointers.add(e.pointerId);
       if (pointers.size > 1) { painting = false; return; }
+      if (handActive()) { selectAt(e.clientX, e.clientY); return; }
       painting = true;
-      lockRegion = null; // 新しいストローク開始
+      lockRegion = null;
       strokePaint(e.clientX, e.clientY);
     };
     stage.onpointermove = (e) => {
-      if (!painting || pointers.size > 1) return;
+      if (handActive() || !painting || pointers.size > 1) return;
       strokePaint(e.clientX, e.clientY);
     };
+  }
+
+  // タップした パーツを「選択」(まだ塗らない)
+  function selectAt(x, y) {
+    const el = regionAt(x, y);
+    if (el) setHighlight(el);
   }
   function endPointer(e) {
     pointers.delete(e.pointerId);
@@ -180,7 +193,7 @@
     aimCand = null; aimCnt = 0;
   }
 
-  // パッチン！ 選択中のパーツを 魔法みたいに塗る → 塗ったら選択解除(次を選べる)
+  // パッチン！ タップで選んだ(光っている)パーツを 魔法みたいに塗る
   function snapPaint() {
     const r = state.aimRegion;
     if (!r) return;
@@ -188,8 +201,7 @@
     const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
     applyColor(r, cx, cy, true);
     if (global.FX) global.FX.magic(cx, cy, resolveColor());
-    setHighlight(null); // 固定を解除 → つぎのパーツを えらべる
-    aimCand = null; aimCnt = 0;
+    // 選択は残す(色を変えて もう一度パッチンも可。別の所は タップで選び直す)
   }
 
   function applyColor(region, px, py, soft) {
