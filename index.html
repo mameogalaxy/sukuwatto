@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#1b1140" />
+  <title>すくわっと AR ぬりえ</title>
+  <meta name="description" content="キャラクターをぬって、ARで現実の世界に飛び出させよう！" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+</head>
+<body>
+  <!-- ===================== タイトル画面 ===================== -->
+  <section id="screen-home" class="screen is-active">
+    <div class="home-inner">
+      <div class="home-stars" aria-hidden="true"></div>
+      <h1 class="home-title">
+        <span class="home-title-main">AR ぬりえ</span>
+        <span class="home-title-sub">すくわっと</span>
+      </h1>
+      <p class="home-lead">すきな キャラクターを ぬって、<br />カメラで げんじつの せかいに よびだそう！</p>
+
+      <h2 class="section-label">キャラクターを えらぶ</h2>
+      <div id="template-gallery" class="gallery" role="list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ぬりえ画面 ===================== -->
+  <section id="screen-color" class="screen">
+    <header class="topbar">
+      <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
+      <h2 class="topbar-title">ぬってみよう</h2>
+      <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
+    </header>
+
+    <div class="canvas-wrap">
+      <div id="svg-stage" class="svg-stage" aria-label="ぬりえキャンバス"></div>
+    </div>
+
+    <div class="toolbar">
+      <div id="palette" class="palette" role="listbox" aria-label="いろ"></div>
+      <div class="tool-row">
+        <button class="tool" data-tool="fill" aria-pressed="true" title="ぬる">
+          <span class="tool-ico">🪣</span><span class="tool-label">ぬる</span>
+        </button>
+        <button class="tool" data-tool="erase" title="けす">
+          <span class="tool-ico">🧽</span><span class="tool-label">けす</span>
+        </button>
+        <button class="tool" id="btn-undo" title="もどす">
+          <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
+        </button>
+        <button class="tool" id="btn-clear" title="ぜんぶけす">
+          <span class="tool-ico">🗑️</span><span class="tool-label">クリア</span>
+        </button>
+        <button class="tool tool-primary" id="btn-to-ar" title="ARでみる">
+          <span class="tool-ico">📷</span><span class="tool-label">AR で みる</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== AR画面 ===================== -->
+  <section id="screen-ar" class="screen screen-ar">
+    <video id="ar-video" class="ar-video" autoplay playsinline muted></video>
+    <canvas id="ar-canvas" class="ar-canvas"></canvas>
+    <div id="ar-fallback" class="ar-fallback" hidden>
+      <p>カメラを つかえませんでした。<br />したのボタンで しゃしんを ほぞんできます。</p>
+    </div>
+
+    <div class="ar-overlay-ui">
+      <header class="topbar topbar-ar">
+        <button class="btn btn-ghost" data-action="back-color" aria-label="もどる">‹ ぬりえに もどる</button>
+        <span id="ar-hint" class="ar-hint">ドラッグで いどう・2ほんゆびで サイズ</span>
+      </header>
+
+      <div class="ar-controls">
+        <button class="btn btn-round" id="btn-ar-rotate" title="まわす">🔄</button>
+        <button class="btn btn-shutter" id="btn-capture" title="さつえい" aria-label="さつえい"></button>
+        <button class="btn btn-round" id="btn-ar-reset" title="まんなかへ">🎯</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== つかいかた モーダル ===================== -->
+  <div id="modal-help" class="modal" hidden>
+    <div class="modal-card">
+      <h3>つかいかた</h3>
+      <ol>
+        <li>🎨 いろを えらぶ</li>
+        <li>🪣 ぬりたい ところを タッチ</li>
+        <li>📷 「AR で みる」を おす</li>
+        <li>カメラに キャラクターが とびだす！</li>
+      </ol>
+      <button class="btn btn-primary" data-action="close-help">わかった！</button>
+    </div>
+  </div>
+
+  <!-- ===================== さつえい プレビュー ===================== -->
+  <div id="modal-shot" class="modal" hidden>
+    <div class="modal-card">
+      <h3>さつえい できました！</h3>
+      <img id="shot-preview" class="shot-preview" alt="さつえいした しゃしん" />
+      <div class="modal-actions">
+        <a id="shot-download" class="btn btn-primary" download="ar-nurie.png">ほぞん</a>
+        <button class="btn" id="shot-share" hidden>シェア</button>
+        <button class="btn btn-ghost" data-action="close-shot">とじる</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/templates.js"></script>
+  <script src="js/coloring.js"></script>
+  <script src="js/ar.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "すくわっと AR ぬりえ",
+  "short_name": "AR ぬりえ",
+  "description": "キャラクターをぬって、ARで現実の世界に飛び出させよう！",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b1140",
+  "theme_color": "#1b1140",
+  "icons": [
+    {
+      "src": "Generated Image November 08, 2025 - 6_23PM.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
