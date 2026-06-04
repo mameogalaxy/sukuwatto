@@ -163,10 +163,10 @@
     if (r) r.classList.add("aim");
   }
 
-  // 選択は安定化: 別パーツが数フレーム続けて最寄りになって初めて切り替える
+  // 選択は「一度ついたら塗るまで固定」。未選択のときだけ、安定した最寄りを選ぶ。
   function aimAt(x, y) {
+    if (state.aimRegion) return state.aimRegion; // ロック中は動かさない(他は選べない)
     const r = nearestRegion(x, y);
-    if (r === state.aimRegion) { aimCand = null; aimCnt = 0; return state.aimRegion; }
     if (r === aimCand) {
       if (++aimCnt >= 3) { setHighlight(r); aimCand = null; aimCnt = 0; }
     } else {
@@ -180,7 +180,7 @@
     aimCand = null; aimCnt = 0;
   }
 
-  // パッチン！ 選択中のパーツを 魔法みたいに塗る
+  // パッチン！ 選択中のパーツを 魔法みたいに塗る → 塗ったら選択解除(次を選べる)
   function snapPaint() {
     const r = state.aimRegion;
     if (!r) return;
@@ -188,6 +188,8 @@
     const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
     applyColor(r, cx, cy, true);
     if (global.FX) global.FX.magic(cx, cy, resolveColor());
+    setHighlight(null); // 固定を解除 → つぎのパーツを えらべる
+    aimCand = null; aimCnt = 0;
   }
 
   function applyColor(region, px, py, soft) {
