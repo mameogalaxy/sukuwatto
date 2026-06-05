@@ -6,7 +6,7 @@
  * → 反映が遅れる事故を避けつつ、オフラインでも起動できる。
  * CDN(MediaPipe 等の別オリジン)は介入しない。
  */
-const CACHE = "sukuwatto-v21";
+const CACHE = "sukuwatto-v22";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
