@@ -1,0 +1,42 @@
+name: izanai
+description: "いざない — 歴史上の人物とオンデバイスAIでチャットして学べるアプリ"
+publish_to: "none"
+
+# version は <ユーザー向けバージョン>+<ビルド番号>
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # オンデバイス LLM (Gemma) 推論エンジン。
+  # 端末上で完結し、ネットワークなしで人物AIが応答する。
+  # 範囲を広めに取り、解決された最新版を利用する。API 差分は
+  # GemmaChatEngine 側でダックタイピングして吸収している（SETUP.md 参照）。
+  flutter_gemma: ">=0.8.0 <2.0.0"
+
+  # 状態管理
+  provider: ^6.1.2
+
+  # 設定・導入済みモデルの記憶
+  shared_preferences: ^2.3.2
+
+  # モデルファイルの保存先取得 (flutter_gemma が利用。明示依存で安定化)
+  path_provider: ^2.1.4
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/figures/
