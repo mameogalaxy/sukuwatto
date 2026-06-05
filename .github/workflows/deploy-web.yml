@@ -1,0 +1,45 @@
+name: Deploy Web Demo
+
+# Flutter Web をビルドして GitHub Pages（gh-pages ブランチ）に公開する。
+# 公開URL（プロジェクトページ）: https://mameogalaxy.github.io/sukuwatto/
+#
+# 初回のみリポジトリ設定が必要:
+#   Settings → Pages → Build and deployment → Source: "Deploy from a branch"
+#   Branch: gh-pages / (root) を選択して保存。
+
+on:
+  push:
+    branches:
+      - claude/historical-figures-chat-Z7bla
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.1
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release --base-href "/sukuwatto/"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          # 本番(main)以外のブランチからの公開も許可する
+          force_orphan: true

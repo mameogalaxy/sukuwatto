@@ -34,10 +34,17 @@ class AppState extends ChangeNotifier {
   String get engineStatusLabel =>
       _gemma.isReady ? _gemma.statusLabel : _mock.statusLabel;
 
-  /// アプリ起動時に呼ぶ。モデルが導入済みなら Gemma を初期化する。
+  /// アプリ起動時に呼ぶ。フレームワークを初期化し、モデルが導入済みなら Gemma を有効化する。
   Future<void> init() async {
     if (_initialized) return;
     await _mock.initialize();
+    // まずモデル管理（flutter_gemma 初期化＋前回モデルの再アクティブ化）を行い、
+    // その後でエンジンを評価する。Web では両方ともダミーで即時完了する。
+    try {
+      await modelManager.initialize();
+    } catch (e) {
+      debugPrint('ModelManager 初期化エラー: $e');
+    }
     await _gemma.initialize();
     _initialized = true;
     notifyListeners();
