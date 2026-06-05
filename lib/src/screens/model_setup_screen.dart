@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -88,6 +89,10 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           _StatusCard(ready: ready),
+          if (kIsWeb) ...[
+            const SizedBox(height: 12),
+            _WebNote(),
+          ],
           const SizedBox(height: 20),
           Text('推奨モデル',
               style: theme.textTheme.titleMedium
@@ -215,6 +220,37 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WebNote extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.science_outlined,
+              size: 18, color: theme.colorScheme.onTertiaryContainer),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'ブラウザでのオンデバイスAIは実験的機能です。WebGPU 対応ブラウザ'
+              '（Chrome / Edge の新しい版）が必要で、初回はモデルのダウンロードに'
+              '時間がかかります。動かない場合は Android アプリ版をご利用ください。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onTertiaryContainer),
+            ),
+          ),
+        ],
       ),
     );
   }

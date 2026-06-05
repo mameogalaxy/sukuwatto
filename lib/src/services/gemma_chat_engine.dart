@@ -1,8 +1,6 @@
-// プラットフォームに応じて GemmaChatEngine の実装を切り替えるエントリ。
+// GemmaChatEngine のエントリ。
 //
-// - ネイティブ（Android/iOS/デスクトップ: dart:io あり）→ flutter_gemma 実装
-// - Web（dart:io なし）→ ダミー実装（オンデバイスAI無効、デモ応答にフォールバック）
-//
-// 利用側は常に `gemma_chat_engine.dart` を import すればよい。
-export 'gemma_chat_engine_stub.dart'
-    if (dart.library.io) 'gemma_chat_engine_io.dart';
+// flutter_gemma は Android/iOS/デスクトップに加え Web（WebGPU）にも対応しているため、
+// 実装（_io）を全プラットフォーム共通で用いる。モデル未導入時は AppState 側で
+// デモ応答（MockChatEngine）にフォールバックする。
+export 'gemma_chat_engine_io.dart';
