@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#E59AA4"/>
+      <stop offset="100%" stop-color="#8C2531"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)"/>
+  <!-- 肩・羽織 -->
+  <path d="M30 200 Q100 150 170 200 Z" fill="#3A2326"/>
+  <path d="M84 152 Q100 178 116 152 L116 200 84 200 Z" fill="#F2E2C4"/>
+  <!-- 首 -->
+  <rect x="89" y="120" width="22" height="28" rx="9" fill="#E7B68C"/>
+  <!-- 顔 -->
+  <ellipse cx="100" cy="96" rx="36" ry="42" fill="#F0C39A"/>
+  <!-- 髷(ちょんまげ)と月代 -->
+  <path d="M64 86 Q70 52 100 50 Q130 52 136 86 Q120 66 100 66 Q80 66 64 86 Z" fill="#241915"/>
+  <rect x="92" y="40" width="16" height="20" rx="7" fill="#241915"/>
+  <!-- 眉(力強い) -->
+  <path d="M76 86 q10 -6 20 0" stroke="#241915" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M104 86 q10 -6 20 0" stroke="#241915" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- 目 -->
+  <ellipse cx="86" cy="96" rx="4.2" ry="4.6" fill="#2b211c"/>
+  <ellipse cx="114" cy="96" rx="4.2" ry="4.6" fill="#2b211c"/>
+  <!-- 口 -->
+  <path d="M90 116 q10 6 20 0" stroke="#7a3b34" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- 家紋風アクセント -->
+  <circle cx="100" cy="186" r="7" fill="none" stroke="#C9A24B" stroke-width="2"/>
+</svg>

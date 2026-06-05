@@ -39,6 +39,12 @@ class AboutScreen extends StatelessWidget {
                 '歴史への興味のきっかけづくりに。',
           ),
           _Feature(
+            icon: Icons.brush_outlined,
+            title: '肖像について',
+            body: '人物の肖像は、写真や既存の絵画を複製せず、その人物・時代を象徴する'
+                'オリジナルのイラストとして描き起こしています（実際の容姿とは異なります）。',
+          ),
+          _Feature(
             icon: Icons.info_outline,
             title: 'ご注意',
             body: 'AIの応答には誤りが含まれることがあります。'

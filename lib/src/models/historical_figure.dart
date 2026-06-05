@@ -11,6 +11,7 @@ class HistoricalFigure {
     required this.name,
     required this.reading,
     required this.emoji,
+    this.portraitAsset,
     required this.field,
     required this.region,
     required this.birthYear,
@@ -31,8 +32,14 @@ class HistoricalFigure {
   /// 読み仮名（例: おだ のぶなが）。
   final String reading;
 
-  /// アバターとして使う絵文字。画像アセットを持たずに軽量化するための簡易表現。
+  /// アバターとして使う絵文字。肖像が無い場合のフォールバック。
   final String emoji;
+
+  /// 人物のオリジナル肖像（自作 SVG）のアセットパス。null の場合は [emoji] を使う。
+  ///
+  /// 写真や既存の肖像画を複製せず、その人物・時代を象徴する非写実のイラストとして
+  /// 用意している（肖像権・著作権に配慮）。
+  final String? portraitAsset;
 
   /// 主な分野（例: 武将 / 物理学者）。
   final String field;

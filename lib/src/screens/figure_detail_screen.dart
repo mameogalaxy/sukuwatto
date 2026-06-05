@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/historical_figure.dart';
+import '../widgets/figure_portrait.dart';
 import 'chat_screen.dart';
 
 /// 人物のプロフィールを見せ、チャットへ誘導する画面。
@@ -20,18 +21,7 @@ class FigureDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
         children: [
           Center(
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border:
-                    Border.all(color: accent.withValues(alpha: 0.4), width: 2),
-              ),
-              alignment: Alignment.center,
-              child: Text(figure.emoji, style: const TextStyle(fontSize: 44)),
-            ),
+            child: FigurePortrait(figure: figure, size: 120),
           ),
           const SizedBox(height: 16),
           Center(

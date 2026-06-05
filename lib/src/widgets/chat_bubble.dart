@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/chat_message.dart';
 import '../models/historical_figure.dart';
+import 'figure_portrait.dart';
 import 'typing_indicator.dart';
 
 /// 1メッセージの吹き出し。
@@ -19,7 +20,6 @@ class ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUser = message.isUser;
-    final accent = figure.accentColor;
 
     final bubbleColor = isUser
         ? theme.colorScheme.primary
@@ -67,33 +67,17 @@ class ChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
-            _MiniAvatar(emoji: figure.emoji, color: accent),
+            FigurePortrait(
+              figure: figure,
+              size: 34,
+              showRing: false,
+              speaking: message.isStreaming,
+            ),
             const SizedBox(width: 8),
           ],
           Flexible(child: bubble),
         ],
       ),
-    );
-  }
-}
-
-class _MiniAvatar extends StatelessWidget {
-  const _MiniAvatar({required this.emoji, required this.color});
-
-  final String emoji;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 16)),
     );
   }
 }

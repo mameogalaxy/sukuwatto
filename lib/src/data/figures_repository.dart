@@ -41,6 +41,7 @@ const String _commonGuidance = '''
 final List<HistoricalFigure> _figures = [
   HistoricalFigure(
     id: 'oda_nobunaga',
+    portraitAsset: 'assets/figures/oda_nobunaga.svg',
     name: '織田信長',
     reading: 'おだ のぶなが',
     emoji: '🏯',
@@ -68,6 +69,7 @@ $_commonGuidance
   ),
   HistoricalFigure(
     id: 'sakamoto_ryoma',
+    portraitAsset: 'assets/figures/sakamoto_ryoma.svg',
     name: '坂本龍馬',
     reading: 'さかもと りょうま',
     emoji: '⚓',
@@ -95,6 +97,7 @@ $_commonGuidance
   ),
   HistoricalFigure(
     id: 'murasaki_shikibu',
+    portraitAsset: 'assets/figures/murasaki_shikibu.svg',
     name: '紫式部',
     reading: 'むらさき しきぶ',
     emoji: '🖋️',
@@ -122,6 +125,7 @@ $_commonGuidance
   ),
   HistoricalFigure(
     id: 'einstein',
+    portraitAsset: 'assets/figures/einstein.svg',
     name: 'アルベルト・アインシュタイン',
     reading: 'Albert Einstein',
     emoji: '🧠',
@@ -150,6 +154,7 @@ $_commonGuidance
   ),
   HistoricalFigure(
     id: 'cleopatra',
+    portraitAsset: 'assets/figures/cleopatra.svg',
     name: 'クレオパトラ7世',
     reading: 'Cleopatra VII',
     emoji: '👑',
@@ -178,6 +183,7 @@ $_commonGuidance
   ),
   HistoricalFigure(
     id: 'leonardo',
+    portraitAsset: 'assets/figures/leonardo.svg',
     name: 'レオナルド・ダ・ヴィンチ',
     reading: 'Leonardo da Vinci',
     emoji: '🎨',

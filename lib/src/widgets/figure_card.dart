@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/historical_figure.dart';
+import 'figure_portrait.dart';
 
 /// ホーム画面の人物一覧で使うカード。
 class FigureCard extends StatelessWidget {
@@ -16,7 +17,6 @@ class FigureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = figure.accentColor;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -28,7 +28,7 @@ class FigureCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _Avatar(emoji: figure.emoji, color: accent),
+              FigurePortrait(figure: figure, size: 58),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -63,28 +63,6 @@ class FigureCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.emoji, required this.color});
-
-  final String emoji;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
-      ),
-      alignment: Alignment.center,
-      child: Text(emoji, style: const TextStyle(fontSize: 28)),
     );
   }
 }

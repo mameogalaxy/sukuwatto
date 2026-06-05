@@ -5,6 +5,7 @@ import '../models/historical_figure.dart';
 import '../state/app_state.dart';
 import '../state/chat_controller.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/figure_portrait.dart';
 import '../widgets/message_composer.dart';
 
 /// 1人の人物とのチャット画面。
@@ -75,29 +76,42 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: figure.accentColor.withValues(alpha: 0.18),
-              child: Text(figure.emoji),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(figure.name,
-                      style: Theme.of(context).textTheme.titleMedium),
-                  Text(
-                    '${figure.field} ・ ${figure.lifespanLabel}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSurfaceVariant),
+        title: ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) {
+            final speaking = _controller.isGenerating;
+            return Row(
+              children: [
+                FigurePortrait(
+                  figure: figure,
+                  size: 40,
+                  showRing: false,
+                  speaking: speaking,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(figure.name,
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        speaking
+                            ? '${figure.name}が話しています…'
+                            : '${figure.field} ・ ${figure.lifespanLabel}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: speaking
+                                ? figure.accentColor
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
       body: Column(
@@ -155,9 +169,9 @@ class _ChatIntro extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
         Center(
-          child: Text(figure.emoji, style: const TextStyle(fontSize: 56)),
+          child: FigurePortrait(figure: figure, size: 104),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Center(
           child: Text(
             '${figure.name}に話しかけてみましょう',

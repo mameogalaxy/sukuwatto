@@ -22,6 +22,9 @@ dependencies:
   # 状態管理
   provider: ^6.1.2
 
+  # 人物のオリジナル肖像（自作ベクター画像）の描画
+  flutter_svg: ^2.0.10+1
+
   # 設定・導入済みモデルの記憶
   shared_preferences: ^2.3.2
 
