@@ -224,10 +224,15 @@
   document.addEventListener("gesturestart", (e) => e.preventDefault());
   document.addEventListener("dblclick", (e) => e.preventDefault());
 
-  // ---- PWA: Service Worker 登録(オフライン対応・Androidアプリ化の土台) ----
+  // ---- 既存の Service Worker を解除＋キャッシュ全削除 ----
+  // 同じ GitHub Pages の URL(/sukuwatto/)配下で別プロジェクトを開いたとき、
+  // 古いアプリがキャッシュで居座る事故を防ぐ(SWは使わない方針)。
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch((e) => console.warn("SW register failed", e));
-    });
+    navigator.serviceWorker.getRegistrations()
+      .then((rs) => rs.forEach((r) => r.unregister()))
+      .catch(() => {});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
   }
 })();
