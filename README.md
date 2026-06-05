@@ -77,8 +77,22 @@ flutter run        # まずはデモ応答モードで起動
 | Web (Chrome/Edge + WebGPU) | 🧪 実験的 | flutter_gemma の Web 対応を利用。初回にモデルDL |
 | モデル未導入時 | デモ応答 | 内蔵 Mock が動作し UI を確認できる |
 
-軽量モデル(Gemma 1B〜4B 級, INT4/INT8)を想定しています。モデルは端末/ブラウザ内に
-保存され、会話時に通信は発生しません。
+軽量モデル(1B〜4B 級)を想定しています。モデルは端末/ブラウザ内に保存され、
+会話時に通信は発生しません。
+
+### おすすめモデル(無料・登録不要・Web/Android 両対応の `.task`)
+
+アプリ内「オンデバイスAIの設定 → おすすめモデル」からタップ導入できます。
+手入力する場合は以下のURL(flutter_gemma 公式サンプル採用、litert-community 公開):
+
+| モデル | 目安サイズ | 用途 | URL |
+| --- | --- | --- | --- |
+| Qwen2.5 1.5B Instruct(推奨) | 約1.6GB | 品質と容量のバランス | `https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv1280.task` |
+| Qwen2.5 0.5B Instruct(軽量) | 約0.5GB | まず試す | `https://huggingface.co/litert-community/Qwen2.5-0.5B-Instruct/resolve/main/Qwen2.5-0.5B-Instruct_multi-prefill-seq_q8_ekv1280.task` |
+| SmolLM 135M(超軽量) | 約135MB | 動作確認用 | `https://huggingface.co/litert-community/SmolLM-135M-Instruct/resolve/main/SmolLM-135M-Instruct_multi-prefill-seq_q8_ekv1280.task` |
+
+> Web で動かすには Chrome / Edge + WebGPU が必要です。`.litertlm` 形式は Web 非対応のため、
+> 上記は Web/Android 両対応の `.task` を選んでいます。日本語重視なら Qwen2.5 系がおすすめです。
 
 ## 注意
 

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../services/model_manager_service.dart';
+import '../services/model_info.dart';
 import '../state/app_state.dart';
 
 /// オンデバイスAIモデルの導入（ダウンロード）と削除を行う画面。
@@ -28,14 +28,29 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     super.dispose();
   }
 
-  Future<void> _startDownload() async {
+  /// 手入力URLからの導入。
+  Future<void> _startManualDownload() async {
     final url = _urlController.text.trim();
     if (url.isEmpty) {
       setState(() => _error = 'モデルのダウンロードURLを入力してください。');
       return;
     }
-    final appState = context.read<AppState>();
     final token = _tokenController.text.trim();
+    await _download(
+      url: url,
+      token: token.isEmpty ? null : token,
+      kind: ModelKind.gemma,
+    );
+  }
+
+  /// プリセット／手入力 共通のダウンロード処理。
+  Future<void> _download({
+    required String url,
+    String? token,
+    required ModelKind kind,
+  }) async {
+    if (_downloading) return;
+    final appState = context.read<AppState>();
 
     setState(() {
       _downloading = true;
@@ -46,7 +61,8 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     try {
       final stream = appState.modelManager.downloadFromNetwork(
         url,
-        token: token.isEmpty ? null : token,
+        token: token,
+        kind: kind,
       );
       await for (final p in stream) {
         if (!mounted) return;
@@ -54,10 +70,16 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       }
       await appState.refreshOnDeviceEngine();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('オンデバイスAIの準備が整いました。')),
-      );
-      Navigator.of(context).maybePop();
+      if (appState.isOnDeviceReady) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('オンデバイスAIの準備が整いました。')),
+        );
+        Navigator.of(context).maybePop();
+      } else {
+        setState(() => _error =
+            'ダウンロードは完了しましたが、モデルを起動できませんでした。'
+            '（ブラウザの場合は WebGPU 対応をご確認ください）');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'ダウンロードに失敗しました: $e');
@@ -80,7 +102,6 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final appState = context.watch<AppState>();
-    final info = ModelManagerService.recommendedModel;
     final ready = appState.isOnDeviceReady;
 
     return Scaffold(
@@ -94,35 +115,30 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             _WebNote(),
           ],
           const SizedBox(height: 20),
-          Text('推奨モデル',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(info.displayName,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('サイズの目安: ${info.sizeLabel}',
-                      style: theme.textTheme.bodySmall),
-                  const SizedBox(height: 8),
-                  Text(info.note, style: theme.textTheme.bodyMedium),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text('モデルを導入する',
+          Text('おすすめモデル（タップで導入）',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(
-            'MediaPipe LLM 形式（.task）の Gemma モデルのダウンロードURLを指定してください。'
+            'いずれも無料・登録不要で、ブラウザ（Chrome/Edge + WebGPU）とAndroidの'
+            '両方で動く軽量モデルです。初回のみダウンロードし、以降は端末内で完結します。',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          for (final preset in kModelPresets)
+            _PresetCard(
+              preset: preset,
+              enabled: !_downloading,
+              onTap: () => _download(url: preset.url, kind: preset.kind),
+            ),
+          const SizedBox(height: 20),
+          Text('URLを指定して導入（上級者向け）',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            'MediaPipe LLM 形式（.task）の Gemma モデルのダウンロードURLを指定できます。'
             '配布元によってはアクセストークンが必要です。'
             'モデルはすべて端末内に保存され、会話の内容が外部へ送信されることはありません。',
             style: theme.textTheme.bodySmall
@@ -157,9 +173,9 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             ),
           ] else
             FilledButton.icon(
-              onPressed: _startDownload,
+              onPressed: _startManualDownload,
               icon: const Icon(Icons.download),
-              label: const Text('ダウンロードして導入'),
+              label: const Text('このURLから導入'),
             ),
           if (_error != null) ...[
             const SizedBox(height: 12),
@@ -180,6 +196,52 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           const SizedBox(height: 24),
           _PrivacyNote(),
         ],
+      ),
+    );
+  }
+}
+
+class _PresetCard extends StatelessWidget {
+  const _PresetCard({
+    required this.preset,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final PresetModel preset;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(preset.name,
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('サイズの目安: ${preset.sizeLabel}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            Text(preset.note, style: theme.textTheme.bodyMedium),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: enabled ? onTap : null,
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('導入'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

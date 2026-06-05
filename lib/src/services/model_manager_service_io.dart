@@ -12,11 +12,28 @@ import 'model_info.dart';
 class ModelManagerService {
   static const _urlKey = 'gemma_model_url';
   static const _idKey = 'gemma_model_id';
+  static const _kindKey = 'gemma_model_kind';
 
   /// 画面表示用の推奨モデル情報。
   static const GemmaModelInfo recommendedModel = recommendedGemmaModel;
 
   static bool _frameworkInitialized = false;
+
+  /// ModelKind を flutter_gemma の ModelType へ対応づける。
+  static ModelType _modelTypeFor(ModelKind kind) {
+    switch (kind) {
+      case ModelKind.gemma:
+        return ModelType.gemmaIt;
+      case ModelKind.qwen:
+        return ModelType.qwen;
+      case ModelKind.qwen3:
+        return ModelType.qwen3;
+      case ModelKind.deepSeek:
+        return ModelType.deepSeek;
+      case ModelKind.general:
+        return ModelType.general;
+    }
+  }
 
   /// flutter_gemma を初期化し、前回導入済みのモデルがあれば再度アクティブにする。
   /// アプリ起動時に一度だけ呼ぶ。
@@ -41,17 +58,22 @@ class ModelManagerService {
   /// ネットワークからモデルをダウンロード＆導入し、進捗(0.0〜1.0)を流す。
   ///
   /// 完了するとそのモデルが自動的にアクティブになる（Modern API の仕様）。
-  Stream<double> downloadFromNetwork(String url, {String? token}) {
+  /// [kind] はモデルの系統（Gemma / Qwen など）。チャットテンプレートの選択に使う。
+  Stream<double> downloadFromNetwork(
+    String url, {
+    String? token,
+    ModelKind kind = ModelKind.gemma,
+  }) {
     final controller = StreamController<double>();
     () async {
       try {
         final installation = await FlutterGemma.installModel(
-          modelType: ModelType.gemmaIt,
+          modelType: _modelTypeFor(kind),
         )
             .fromNetwork(url, token: token)
             .withProgress((p) => controller.add((p.clamp(0, 100)) / 100.0))
             .install();
-        await _saveModel(url: url, id: installation.modelId);
+        await _saveModel(url: url, id: installation.modelId, kind: kind);
         controller.add(1.0);
       } catch (e) {
         debugPrint('ダウンロードエラー: $e');
@@ -90,8 +112,10 @@ class ModelManagerService {
       if (url == null) return;
       final installed = await FlutterGemma.listInstalledModels();
       if (installed.isEmpty) return;
+      final kindIndex = prefs.getInt(_kindKey) ?? ModelKind.gemma.index;
+      final kind = ModelKind.values[kindIndex.clamp(0, ModelKind.values.length - 1)];
       // install() は導入済みならダウンロードをスキップし、アクティブ化のみ行う。
-      await FlutterGemma.installModel(modelType: ModelType.gemmaIt)
+      await FlutterGemma.installModel(modelType: _modelTypeFor(kind))
           .fromNetwork(url)
           .install();
     } catch (e) {
@@ -99,15 +123,21 @@ class ModelManagerService {
     }
   }
 
-  Future<void> _saveModel({required String url, required String id}) async {
+  Future<void> _saveModel({
+    required String url,
+    required String id,
+    required ModelKind kind,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_urlKey, url);
     await prefs.setString(_idKey, id);
+    await prefs.setInt(_kindKey, kind.index);
   }
 
   Future<void> _clearSaved() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_urlKey);
     await prefs.remove(_idKey);
+    await prefs.remove(_kindKey);
   }
 }
