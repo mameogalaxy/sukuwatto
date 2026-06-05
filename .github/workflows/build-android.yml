@@ -1,0 +1,66 @@
+name: Build Android APK
+
+# Android の APK をビルドし、GitHub Release に直リンクで公開する。
+# 生成物はスマホのブラウザから直接DLしてインストールできる（Playストア不要）。
+#
+# 公開先（毎回更新される固定URL）:
+#   https://github.com/mameogalaxy/sukuwatto/releases/download/android-latest/izanai.apk
+
+on:
+  push:
+    branches:
+      - claude/historical-figures-chat-Z7bla
+      - main
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.1
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK (debug-signed; for sideload / testing)
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/izanai.apk
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: いざない Android (最新ビルド)
+          body: |
+            歴史の人物とチャットして学ぶアプリ「いざない」の Android テスト版です。
+
+            ## インストール方法（Android端末）
+            1. このページの `izanai.apk` をタップしてダウンロード
+            2. 「不明なアプリのインストール」を許可してインストール
+            3. アプリ内「オンデバイスAIの設定」から軽量モデルを導入すると本物のAI会話になります
+
+            ※ Playストアを通さないテスト配布です（無料・審査なし）。
+          prerelease: true
+          files: dist/izanai.apk
