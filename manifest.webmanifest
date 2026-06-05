@@ -1,7 +1,7 @@
 {
-  "name": "すくわっと AR ぬりえ",
-  "short_name": "AR ぬりえ",
-  "description": "キャラクターをえらんで、タップ＆指パッチンで まほうみたいにぬろう。",
+  "name": "AI ぬりえ",
+  "short_name": "AI ぬりえ",
+  "description": "キャラクターをえらんで、タップ＆指パッチン（AIハンドトラッキング）で まほうみたいにぬる AIぬりえアプリ。",
   "id": "/sukuwatto/",
   "start_url": "./index.html",
   "scope": "./",
