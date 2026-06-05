@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#eef2f8" />
+  <title>AI ぬりえ</title>
+  <meta name="description" content="キャラクターをえらんで、タップ＆指パッチン（AIハンドトラッキング）で まほうみたいにぬる AIぬりえアプリ。" />
+  <link rel="stylesheet" href="css/styles.css?v=24" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <!-- PWA / ホーム画面・Androidアプリ化 -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="AI ぬりえ" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+</head>
+<body>
+  <!-- ===================== タイトル画面 ===================== -->
+  <section id="screen-home" class="screen is-active">
+    <div class="home-inner">
+      <div class="home-stars" aria-hidden="true"></div>
+      <h1 class="home-title">
+        <span class="home-title-main"><span class="accent">AI</span> ぬりえ</span>
+      </h1>
+      <p class="home-lead">すきな キャラクターを えらんで、<br />タップ＆ゆびパッチンで まほうみたいに ぬろう。</p>
+
+      <h2 class="section-label">キャラクターを えらぶ</h2>
+      <div id="template-gallery" class="gallery" role="list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== AR ぬりえ画面 ===================== -->
+  <section id="screen-ar" class="screen screen-ar">
+    <div class="ar-bg" aria-hidden="true"></div>
+    <video id="ar-video" class="ar-video" autoplay playsinline muted></video>
+    <div id="ar-fallback" class="ar-fallback" hidden>
+      <p id="ar-fallback-msg">カメラを つかえませんでした。</p>
+      <button class="btn btn-primary" id="btn-retry-cam">もういちど カメラを ためす</button>
+      <p class="ar-fallback-sub">
+        うつらない ときは、ブラウザの メニュー（共有/•••）から<br />
+        <b>「Safari で ひらく」</b>を おためしください。<br />
+        （アプリ内ブラウザでは カメラが つかえないことが あります）<br />
+        このまま ぬって ほぞんも できます。
+      </p>
+    </div>
+
+    <!-- 空間に浮かぶ、ぬれるキャラクター -->
+    <div id="ar-scene" class="ar-scene">
+      <div id="ar-art" class="ar-art">
+        <div id="ar-float" class="ar-float">
+          <div id="svg-stage" class="svg-stage" aria-label="ぬりえキャラクター"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- キラキラ エフェクト層(UIの下・キャラの上) -->
+    <canvas id="fx-canvas" class="fx-canvas"></canvas>
+
+    <!-- 手のハンドトラッキング表示(カメラ映像は出さない) -->
+    <canvas id="hand-canvas" class="hand-canvas" aria-hidden="true"></canvas>
+
+    <!-- 完成トースト -->
+    <div id="ar-toast" class="ar-toast" hidden>✨ かんせい！ ✨</div>
+
+    <!-- 完成後の つぎどうする？パネル -->
+    <div id="ar-done" class="ar-done" hidden>
+      <button class="ar-done-close" id="done-close" aria-label="とじる">×</button>
+      <p class="ar-done-title">🎉 かんせい！ つぎは…</p>
+      <div class="ar-done-actions">
+        <button class="btn btn-primary" id="done-shot">📷 しゃしんを とる</button>
+        <button class="btn" id="done-again">🧹 やりなおし</button>
+        <button class="btn" id="done-next">🏠 ほかの キャラ</button>
+      </div>
+    </div>
+
+    <div class="ar-overlay-ui">
+      <header class="topbar topbar-ar">
+        <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
+        <span id="ar-hint" class="ar-hint">パーツを タップ → 指パッチンで ぬる！</span>
+        <span class="topbar-right">
+          <button class="btn btn-ghost btn-hands" id="btn-hands" title="手で塗る">✋ 手</button>
+          <button class="btn btn-ghost" id="btn-help" aria-label="つかいかた">？</button>
+        </span>
+      </header>
+
+      <div class="ar-bottom">
+        <div id="palette" class="palette" role="listbox" aria-label="いろ"></div>
+        <div class="ar-controls">
+          <button class="tool" data-tool="erase" id="btn-erase" title="けす">
+            <span class="tool-ico">🧽</span><span class="tool-label">けす</span>
+          </button>
+          <button class="tool" id="btn-undo" title="もどす">
+            <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
+          </button>
+          <button class="btn-shutter" id="btn-capture" title="さつえい" aria-label="さつえい"></button>
+          <button class="tool" id="btn-ar-rotate" title="まわす">
+            <span class="tool-ico">🔄</span><span class="tool-label">まわす</span>
+          </button>
+          <button class="tool" id="btn-ar-reset" title="やりなおし">
+            <span class="tool-ico">🧹</span><span class="tool-label">やりなおし</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== マジック いろチェンジ画面 ===================== -->
+  <section id="screen-magic" class="screen screen-magic">
+    <header class="topbar">
+      <button class="btn btn-ghost" data-action="back-home" aria-label="もどる">‹ もどる</button>
+      <h2 class="topbar-title">マジック いろチェンジ</h2>
+      <span style="width:48px"></span>
+    </header>
+
+    <div class="magic-stage">
+      <canvas id="magic-canvas" class="magic-canvas"></canvas>
+
+      <!-- 写真がまだ無いとき -->
+      <div id="magic-start" class="magic-start">
+        <div class="magic-start-emoji">🪄📷</div>
+        <p>しゃしんの モノの 色を かえよう！<br />まず しゃしんを よういしてね。</p>
+        <label class="btn btn-primary magic-pick">
+          📷 カメラで とる
+          <input id="magic-cam" type="file" accept="image/*" capture="environment" hidden />
+        </label>
+        <label class="btn magic-pick">
+          🖼 しゃしんを えらぶ
+          <input id="magic-file" type="file" accept="image/*" hidden />
+        </label>
+      </div>
+
+      <div id="magic-hint" class="magic-hint" hidden>👆 かえたい モノを タッチ</div>
+    </div>
+
+    <div id="magic-tools" class="magic-bottom" hidden>
+      <div id="magic-palette" class="palette" aria-label="いろ"></div>
+      <label class="magic-thr">
+        えらぶ ひろさ
+        <input id="magic-threshold" type="range" min="14" max="110" value="42" />
+      </label>
+      <div class="ar-controls">
+        <button class="tool" id="magic-undo" title="もどす">
+          <span class="tool-ico">↩️</span><span class="tool-label">もどす</span>
+        </button>
+        <button class="btn-shutter" id="magic-save" title="ほぞん" aria-label="ほぞん"></button>
+        <button class="tool" id="magic-new" title="あたらしい写真">
+          <span class="tool-ico">📷</span><span class="tool-label">べつの写真</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== つかいかた モーダル ===================== -->
+  <div id="modal-help" class="modal" hidden>
+    <div class="modal-card">
+      <h3>つかいかた</h3>
+      <ol>
+        <li>🎨 いろを えらぶ</li>
+        <li>👆 ぬりたい パーツを タッチして えらぶ（ピカッと ひかる）</li>
+        <li>✋「手」ボタン → カメラに 手を かざす</li>
+        <li>🫰 ゆびパッチン（おやゆび＋なかゆび）で、<br />　えらんだ ところが まほうみたいに ぬれる！</li>
+        <li>⚪ ボタンで さつえい！</li>
+      </ol>
+      <p style="font-size:12px;color:var(--muted);margin:0">※「手」ボタンを おさないときは、タッチで そのまま ぬれます</p>
+      <button class="btn btn-primary" data-action="close-help">わかった！</button>
+    </div>
+  </div>
+
+  <!-- ===================== さつえい プレビュー ===================== -->
+  <div id="modal-shot" class="modal" hidden>
+    <div class="modal-card">
+      <h3>さつえい できました！</h3>
+      <img id="shot-preview" class="shot-preview" alt="さつえいした しゃしん" />
+      <div class="modal-actions">
+        <a id="shot-download" class="btn btn-primary" download="ar-nurie.png">ほぞん</a>
+        <button class="btn" id="shot-share" hidden>シェア</button>
+        <button class="btn btn-ghost" data-action="close-shot">とじる</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/templates.js?v=24"></script>
+  <script src="js/fx.js?v=24"></script>
+  <script src="js/coloring.js?v=24"></script>
+  <script src="js/ar.js?v=24"></script>
+  <script src="js/app.js?v=24"></script>
+  <script type="module" src="js/hands.js?v=24"></script>
+</body>
+</html>
