@@ -31,7 +31,19 @@
 
   <title>いざない — 歴史の人物とチャット</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- ▼ オンデバイスAI(flutter_gemma / WebGPU)を動かすための依存 -->
+  <!-- MediaPipe GenAI：ブラウザ内でLLM推論を実行 -->
+  <script type="module">
+  import { FilesetResolver, LlmInference } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.27';
+  window.FilesetResolver = FilesetResolver;
+  window.LlmInference = LlmInference;
+  </script>
+  <!-- Cache API：ダウンロードしたモデルを端末内に保存(cachePut等を定義) -->
+  <script src="https://cdn.jsdelivr.net/gh/DenisovAV/flutter_gemma@0.11.14/web/cache_api.js"></script>
+  <!-- ▲ ここまで -->
 </head>
+
 <body>
   <!--
     You can customize the "flutter_bootstrap.js" script.
