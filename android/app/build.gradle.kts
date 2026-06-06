@@ -27,9 +27,12 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // テスト配布用のため debug 鍵で署名（サイドロード可）。
             signingConfig = signingConfigs.getByName("debug")
+            // flutter_gemma(MediaPipe) のクラスを R8 が誤って削除し
+            // ビルドが失敗するため、コード圧縮を無効化する。
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
