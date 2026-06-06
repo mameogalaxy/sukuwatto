@@ -131,7 +131,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     final ready = appState.isOnDeviceReady;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('オンデバイスAIの設定')),
+      appBar: AppBar(title: const Text('AIの設定')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

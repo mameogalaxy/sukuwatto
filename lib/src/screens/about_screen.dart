@@ -56,7 +56,7 @@ class AboutScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const ModelSetupScreen()),
             ),
             icon: const Icon(Icons.tune),
-            label: const Text('オンデバイスAIの設定'),
+            label: const Text('AIの設定（クラウド／オンデバイス）'),
           ),
           const SizedBox(height: 24),
           Text('バージョン 0.1.0',
