@@ -17,13 +17,54 @@ import 'chat_engine.dart';
 class GeminiChatEngine implements ChatEngine {
   GeminiChatEngine({
     required this.apiKey,
-    this.model = 'gemini-2.0-flash',
+    this.model = 'gemini-2.5-flash',
     this.temperature = 0.8,
   });
 
   final String apiKey;
   final String model;
   final double temperature;
+
+  /// API キーで「generateContent に対応した利用可能なモデル名」一覧を取得する。
+  ///
+  /// モデル名はバージョンや無料枠の都合で変わるため、固定せず実環境から取得する。
+  static Future<List<String>> listModels(String apiKey) async {
+    final uri = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models'
+      '?pageSize=200&key=${apiKey.trim()}',
+    );
+    final resp = await http.get(uri);
+    if (resp.statusCode != 200) {
+      throw Exception('モデル一覧の取得に失敗 (${resp.statusCode})');
+    }
+    final data = jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+    final models = (data['models'] as List<dynamic>?) ?? const [];
+    final result = <String>[];
+    for (final m in models) {
+      final mm = m as Map<String, dynamic>;
+      final methods =
+          (mm['supportedGenerationMethods'] as List<dynamic>?)?.cast<String>() ??
+              const [];
+      if (!methods.contains('generateContent')) continue;
+      var name = (mm['name'] as String?) ?? '';
+      if (name.startsWith('models/')) name = name.substring(7);
+      // 画像/音声/TTS等の特殊モデルは会話用途では除外（チャット向けに絞る）。
+      if (name.contains('embedding') ||
+          name.contains('imagen') ||
+          name.contains('tts') ||
+          name.contains('image')) {
+        continue;
+      }
+      if (name.isNotEmpty) result.add(name);
+    }
+    // 新しめ・flash系を上に。
+    result.sort((a, b) {
+      int score(String s) =>
+          (s.contains('flash') ? -2 : 0) + (s.contains('2.5') ? -1 : 0);
+      return score(a).compareTo(score(b));
+    });
+    return result;
+  }
 
   @override
   bool get isReady => apiKey.trim().isNotEmpty;

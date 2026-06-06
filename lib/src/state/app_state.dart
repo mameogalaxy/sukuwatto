@@ -76,7 +76,7 @@ class AppState extends ChangeNotifier {
   /// クラウドAI（Gemini）を有効にする。APIキーは端末内にのみ保存される。
   Future<void> enableCloud({
     required String apiKey,
-    String model = 'gemini-2.0-flash',
+    String model = 'gemini-2.5-flash',
   }) async {
     final key = apiKey.trim();
     _cloud = GeminiChatEngine(apiKey: key, model: model.trim());
@@ -100,7 +100,7 @@ class AppState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final key = prefs.getString(_cloudKeyPref);
       if (key == null || key.trim().isEmpty) return;
-      final model = prefs.getString(_cloudModelPref) ?? 'gemini-2.0-flash';
+      final model = prefs.getString(_cloudModelPref) ?? 'gemini-2.5-flash';
       _cloud = GeminiChatEngine(apiKey: key, model: model);
     } catch (e) {
       debugPrint('クラウド設定の復元に失敗: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/gemini_chat_engine.dart';
 import '../services/model_info.dart';
 import '../state/app_state.dart';
 
@@ -17,17 +18,55 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   final _urlController = TextEditingController();
   final _tokenController = TextEditingController();
   final _cloudKeyController = TextEditingController();
+  final _cloudModelController = TextEditingController(text: 'gemini-2.5-flash');
 
   bool _downloading = false;
   double _progress = 0;
   String? _error;
+
+  List<String> _models = [];
+  bool _fetchingModels = false;
 
   @override
   void dispose() {
     _urlController.dispose();
     _tokenController.dispose();
     _cloudKeyController.dispose();
+    _cloudModelController.dispose();
     super.dispose();
+  }
+
+  /// 入力したキーで「使えるモデル一覧」を取得する。
+  Future<void> _fetchModels() async {
+    final key = _cloudKeyController.text.trim();
+    if (key.isEmpty) {
+      setState(() => _error = '先に Gemini の API キーを入力してください。');
+      return;
+    }
+    setState(() {
+      _fetchingModels = true;
+      _error = null;
+    });
+    try {
+      final models = await GeminiChatEngine.listModels(key);
+      if (!mounted) return;
+      setState(() {
+        _models = models;
+        // 現在の指定が一覧に無ければ、先頭（flash優先でソート済み）に合わせる。
+        if (models.isNotEmpty &&
+            !models.contains(_cloudModelController.text.trim())) {
+          _cloudModelController.text = models.first;
+        }
+      });
+      if (models.isEmpty) {
+        setState(() => _error = '利用可能な会話モデルが見つかりませんでした。');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'モデル取得に失敗：$e');
+    } finally {
+      if (mounted) setState(() => _fetchingModels = false);
+    }
   }
 
   Future<void> _enableCloud() async {
@@ -36,12 +75,15 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       setState(() => _error = 'Gemini の API キーを入力してください。');
       return;
     }
+    final model = _cloudModelController.text.trim().isEmpty
+        ? 'gemini-2.5-flash'
+        : _cloudModelController.text.trim();
     final appState = context.read<AppState>();
-    await appState.enableCloud(apiKey: key);
+    await appState.enableCloud(apiKey: key, model: model);
     _cloudKeyController.clear();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('クラウドAI（Gemini）を有効にしました。')),
+      SnackBar(content: Text('クラウドAI（Gemini・$model）を有効にしました。')),
     );
     Navigator.of(context).maybePop();
   }
@@ -138,10 +180,15 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           _StatusCard(ready: ready, cloudReady: appState.isCloudReady),
           const SizedBox(height: 20),
           _CloudSection(
-            controller: _cloudKeyController,
-            enabled: !_downloading,
+            keyController: _cloudKeyController,
+            modelController: _cloudModelController,
+            enabled: !_downloading && !_fetchingModels,
             cloudReady: appState.isCloudReady,
             cloudModel: appState.cloudModel,
+            models: _models,
+            fetchingModels: _fetchingModels,
+            onFetchModels: _fetchModels,
+            onPickModel: (m) => setState(() => _cloudModelController.text = m),
             onEnable: _enableCloud,
             onDisable: _disableCloud,
           ),
@@ -343,21 +390,31 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// クラウドAI（Gemini）の設定セクション。APIキーを入れて有効化する。
+/// クラウドAI（Gemini）の設定セクション。APIキーを入れ、モデルを選んで有効化する。
 class _CloudSection extends StatelessWidget {
   const _CloudSection({
-    required this.controller,
+    required this.keyController,
+    required this.modelController,
     required this.enabled,
     required this.cloudReady,
     required this.cloudModel,
+    required this.models,
+    required this.fetchingModels,
+    required this.onFetchModels,
+    required this.onPickModel,
     required this.onEnable,
     required this.onDisable,
   });
 
-  final TextEditingController controller;
+  final TextEditingController keyController;
+  final TextEditingController modelController;
   final bool enabled;
   final bool cloudReady;
   final String? cloudModel;
+  final List<String> models;
+  final bool fetchingModels;
+  final VoidCallback onFetchModels;
+  final ValueChanged<String> onPickModel;
   final VoidCallback onEnable;
   final VoidCallback onDisable;
 
@@ -419,7 +476,7 @@ class _CloudSection extends StatelessWidget {
           )
         else ...[
           TextField(
-            controller: controller,
+            controller: keyController,
             enabled: enabled,
             obscureText: true,
             decoration: const InputDecoration(
@@ -429,10 +486,63 @@ class _CloudSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // モデル選択：キーで実際に使えるモデルを取得して選ぶ（名前を当てずに済む）。
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: modelController,
+                  enabled: enabled,
+                  decoration: const InputDecoration(
+                    labelText: 'モデル名',
+                    hintText: 'gemini-2.5-flash',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: enabled ? onFetchModels : null,
+                child: fetchingModels
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('一覧取得'),
+              ),
+            ],
+          ),
+          if (models.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('使えるモデル（タップで選択）',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final m in models)
+                  ActionChip(
+                    label: Text(m, style: theme.textTheme.bodySmall),
+                    onPressed: () => onPickModel(m),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: enabled ? onEnable : null,
             icon: const Icon(Icons.cloud_done_outlined),
             label: const Text('クラウドAIを有効にする'),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'ヒント：エラー「quota / limit: 0」が出るモデルは無料枠対象外です。'
+            '「一覧取得」で出たモデル（flash系がおすすめ）を選んでください。',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ],
