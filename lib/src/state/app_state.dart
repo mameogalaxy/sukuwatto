@@ -41,6 +41,9 @@ class AppState extends ChangeNotifier {
   /// 現在設定されているクラウドモデル名（未設定なら null）。
   String? get cloudModel => _cloud?.model;
 
+  /// 現在設定されているクラウドAPIキー（モデル変更時の再利用に使う）。
+  String? get cloudApiKey => _cloud?.apiKey;
+
   /// 現在アクティブな会話エンジン。クラウド > オンデバイス > デモ の順。
   ChatEngine get activeEngine {
     if (_cloud?.isReady ?? false) return _cloud!;
@@ -100,7 +103,12 @@ class AppState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final key = prefs.getString(_cloudKeyPref);
       if (key == null || key.trim().isEmpty) return;
-      final model = prefs.getString(_cloudModelPref) ?? 'gemini-2.5-flash';
+      var model = prefs.getString(_cloudModelPref) ?? 'gemini-2.5-flash';
+      // 無料枠で使えなくなった旧モデルを自動移行する。
+      if (model == 'gemini-2.0-flash' || model == 'gemini-pro') {
+        model = 'gemini-2.5-flash';
+        await prefs.setString(_cloudModelPref, model);
+      }
       _cloud = GeminiChatEngine(apiKey: key, model: model);
     } catch (e) {
       debugPrint('クラウド設定の復元に失敗: $e');

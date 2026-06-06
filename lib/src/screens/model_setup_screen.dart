@@ -36,9 +36,16 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     super.dispose();
   }
 
-  /// 入力したキーで「使えるモデル一覧」を取得する。
+  /// 有効化済みなら保存済みキー、未設定なら入力欄のキーを使う。
+  String _resolveCloudKey() {
+    final appState = context.read<AppState>();
+    if (appState.isCloudReady) return appState.cloudApiKey ?? '';
+    return _cloudKeyController.text.trim();
+  }
+
+  /// キーで「使えるモデル一覧」を取得する。
   Future<void> _fetchModels() async {
-    final key = _cloudKeyController.text.trim();
+    final key = _resolveCloudKey();
     if (key.isEmpty) {
       setState(() => _error = '先に Gemini の API キーを入力してください。');
       return;
@@ -69,8 +76,11 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     }
   }
 
-  Future<void> _enableCloud() async {
-    final key = _cloudKeyController.text.trim();
+  /// クラウドAIを有効化／モデル変更する（有効化済みなら保存キーを再利用）。
+  Future<void> _applyCloud() async {
+    final appState = context.read<AppState>();
+    final wasReady = appState.isCloudReady;
+    final key = _resolveCloudKey();
     if (key.isEmpty) {
       setState(() => _error = 'Gemini の API キーを入力してください。');
       return;
@@ -78,14 +88,18 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     final model = _cloudModelController.text.trim().isEmpty
         ? 'gemini-2.5-flash'
         : _cloudModelController.text.trim();
-    final appState = context.read<AppState>();
     await appState.enableCloud(apiKey: key, model: model);
     _cloudKeyController.clear();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('クラウドAI（Gemini・$model）を有効にしました。')),
+      SnackBar(
+        content: Text(wasReady
+            ? 'モデルを $model に変更しました。'
+            : 'クラウドAI（Gemini・$model）を有効にしました。'),
+      ),
     );
-    Navigator.of(context).maybePop();
+    // モデル変更だけのときは画面に留まる（続けて試せるよう）。
+    if (!wasReady) Navigator.of(context).maybePop();
   }
 
   Future<void> _disableCloud() async {
@@ -189,7 +203,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             fetchingModels: _fetchingModels,
             onFetchModels: _fetchModels,
             onPickModel: (m) => setState(() => _cloudModelController.text = m),
-            onEnable: _enableCloud,
+            onApply: _applyCloud,
             onDisable: _disableCloud,
           ),
           const SizedBox(height: 24),
@@ -402,7 +416,7 @@ class _CloudSection extends StatelessWidget {
     required this.fetchingModels,
     required this.onFetchModels,
     required this.onPickModel,
-    required this.onEnable,
+    required this.onApply,
     required this.onDisable,
   });
 
@@ -415,7 +429,7 @@ class _CloudSection extends StatelessWidget {
   final bool fetchingModels;
   final VoidCallback onFetchModels;
   final ValueChanged<String> onPickModel;
-  final VoidCallback onEnable;
+  final VoidCallback onApply;
   final VoidCallback onDisable;
 
   @override
@@ -453,28 +467,27 @@ class _CloudSection extends StatelessWidget {
             color: theme.colorScheme.primaryContainer,
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text('有効：${cloudModel ?? "gemini"}',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      )),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: OutlinedButton.icon(
-                      onPressed: onDisable,
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: const Text('解除'),
-                    ),
+                  Expanded(
+                    child: Text('有効中のモデル：${cloudModel ?? "gemini"}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        )),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onDisable,
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('解除'),
                   ),
                 ],
               ),
             ),
-          )
-        else ...[
+          ),
+        if (cloudReady) const SizedBox(height: 12),
+        // キーは未設定のときだけ入力（有効化済みなら保存キーを使う）。
+        if (!cloudReady) ...[
           TextField(
             controller: keyController,
             enabled: enabled,
@@ -486,7 +499,9 @@ class _CloudSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          // モデル選択：キーで実際に使えるモデルを取得して選ぶ（名前を当てずに済む）。
+        ],
+        // モデル選択：キーで実際に使えるモデルを取得して選ぶ（名前を当てずに済む）。
+        ...[
           Row(
             children: [
               Expanded(
@@ -533,9 +548,9 @@ class _CloudSection extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: enabled ? onEnable : null,
+            onPressed: enabled ? onApply : null,
             icon: const Icon(Icons.cloud_done_outlined),
-            label: const Text('クラウドAIを有効にする'),
+            label: Text(cloudReady ? 'このモデルに変更' : 'クラウドAIを有効にする'),
           ),
           const SizedBox(height: 6),
           Text(
