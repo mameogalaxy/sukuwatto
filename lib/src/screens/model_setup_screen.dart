@@ -16,6 +16,7 @@ class ModelSetupScreen extends StatefulWidget {
 class _ModelSetupScreenState extends State<ModelSetupScreen> {
   final _urlController = TextEditingController();
   final _tokenController = TextEditingController();
+  final _cloudKeyController = TextEditingController();
 
   bool _downloading = false;
   double _progress = 0;
@@ -25,7 +26,32 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   void dispose() {
     _urlController.dispose();
     _tokenController.dispose();
+    _cloudKeyController.dispose();
     super.dispose();
+  }
+
+  Future<void> _enableCloud() async {
+    final key = _cloudKeyController.text.trim();
+    if (key.isEmpty) {
+      setState(() => _error = 'Gemini の API キーを入力してください。');
+      return;
+    }
+    final appState = context.read<AppState>();
+    await appState.enableCloud(apiKey: key);
+    _cloudKeyController.clear();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('クラウドAI（Gemini）を有効にしました。')),
+    );
+    Navigator.of(context).maybePop();
+  }
+
+  Future<void> _disableCloud() async {
+    await context.read<AppState>().disableCloud();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('クラウドAIを解除しました。')),
+    );
   }
 
   /// 手入力URLからの導入。
@@ -109,12 +135,34 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _StatusCard(ready: ready),
+          _StatusCard(ready: ready, cloudReady: appState.isCloudReady),
+          const SizedBox(height: 20),
+          _CloudSection(
+            controller: _cloudKeyController,
+            enabled: !_downloading,
+            cloudReady: appState.isCloudReady,
+            cloudModel: appState.cloudModel,
+            onEnable: _enableCloud,
+            onDisable: _disableCloud,
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text('オンデバイスAI（端末内で完結）',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            '通信なしで動き、会話が外部に出ません。スマホアプリ版や、対応ブラウザ'
+            '（Chrome/Edge + WebGPU）向けです。',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
           if (kIsWeb) ...[
             const SizedBox(height: 12),
             _WebNote(),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text('おすすめモデル（タップで導入）',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
@@ -248,33 +296,41 @@ class _PresetCard extends StatelessWidget {
 }
 
 class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.ready});
+  const _StatusCard({required this.ready, required this.cloudReady});
 
   final bool ready;
+  final bool cloudReady;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final active = ready || cloudReady;
+    final String message;
+    if (cloudReady) {
+      message = 'クラウドAI（Gemini）が有効です。どの端末でも会話できます。';
+    } else if (ready) {
+      message = 'オンデバイスAIが導入済みです。通信なしで会話できます。';
+    } else {
+      message = '現在はデモ応答モードです。下のいずれかを設定すると本物のAI会話になります。';
+    }
     return Card(
-      color: ready
+      color: active
           ? theme.colorScheme.primaryContainer
           : theme.colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(ready ? Icons.check_circle : Icons.info_outline,
-                color: ready
+            Icon(active ? Icons.check_circle : Icons.info_outline,
+                color: active
                     ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                ready
-                    ? 'オンデバイスAIは導入済みです。通信なしで会話できます。'
-                    : '現在はデモ応答モードです。モデルを導入すると本物のAI会話になります。',
+                message,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: ready
+                  color: active
                       ? theme.colorScheme.onPrimaryContainer
                       : theme.colorScheme.onSurface,
                 ),
@@ -283,6 +339,103 @@ class _StatusCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// クラウドAI（Gemini）の設定セクション。APIキーを入れて有効化する。
+class _CloudSection extends StatelessWidget {
+  const _CloudSection({
+    required this.controller,
+    required this.enabled,
+    required this.cloudReady,
+    required this.cloudModel,
+    required this.onEnable,
+    required this.onDisable,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final bool cloudReady;
+  final String? cloudModel;
+  final VoidCallback onEnable;
+  final VoidCallback onDisable;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.cloud_outlined, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text('クラウドAI（Gemini）',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'iPhone・PC・Androidの全端末ですぐ動き、日本語も自然です。'
+          '無料のAPIキーを Google AI Studio で取得して貼り付けてください。'
+          '（会話内容は Google に送信されます。キーは端末内にのみ保存）',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 4),
+        SelectableText(
+          'キー取得: https://aistudio.google.com/apikey',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.primary),
+        ),
+        const SizedBox(height: 12),
+        if (cloudReady)
+          Card(
+            color: theme.colorScheme.primaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('有効：${cloudModel ?? "gemini"}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      )),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: onDisable,
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('解除'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          TextField(
+            controller: controller,
+            enabled: enabled,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Gemini API キー',
+              hintText: 'AIza...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: enabled ? onEnable : null,
+            icon: const Icon(Icons.cloud_done_outlined),
+            label: const Text('クラウドAIを有効にする'),
+          ),
+        ],
+      ],
     );
   }
 }

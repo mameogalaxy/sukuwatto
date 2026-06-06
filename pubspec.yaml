@@ -25,6 +25,9 @@ dependencies:
   # 人物のオリジナル肖像（自作ベクター画像）の描画
   flutter_svg: ^2.0.10+1
 
+  # クラウドAI（Gemini）呼び出し用の HTTP クライアント
+  http: ^1.2.2
+
   # 設定・導入済みモデルの記憶
   shared_preferences: ^2.3.2
 

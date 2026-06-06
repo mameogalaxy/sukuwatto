@@ -105,7 +105,8 @@ class _EngineStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final theme = Theme.of(context);
-    final ready = appState.isOnDeviceReady;
+    final cloud = appState.isCloudReady;
+    final ready = cloud || appState.isOnDeviceReady;
 
     final color = ready
         ? theme.colorScheme.primaryContainer
@@ -113,6 +114,10 @@ class _EngineStatusBanner extends StatelessWidget {
     final onColor = ready
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onTertiaryContainer;
+
+    final readyLabel = cloud
+        ? 'クラウドAI（Gemini）で会話中'
+        : 'オンデバイスAI 稼働中（通信なしで会話できます）';
 
     return Material(
       color: color,
@@ -133,8 +138,8 @@ class _EngineStatusBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   ready
-                      ? 'オンデバイスAI 稼働中（通信なしで会話できます）'
-                      : 'デモ応答モードです。タップしてオンデバイスAIを導入できます。',
+                      ? readyLabel
+                      : 'デモ応答モードです。タップして本物のAI（クラウド/オンデバイス）を設定できます。',
                   style: theme.textTheme.bodySmall?.copyWith(color: onColor),
                 ),
               ),
