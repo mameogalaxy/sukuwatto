@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#B6A0D6"/>
+      <stop offset="100%" stop-color="#4A3470"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)"/>
+  <!-- ローブの肩 -->
+  <path d="M26 200 Q100 148 174 200 Z" fill="#3a2c20"/>
+  <path d="M88 156 Q100 184 112 156 L112 200 88 200 Z" fill="#6a4a30"/>
+  <!-- 長い顎ひげ -->
+  <path d="M72 110 Q76 168 100 178 Q124 168 128 110 Q120 138 100 142 Q80 138 72 110 Z" fill="#C9C3BB"/>
+  <!-- 首 -->
+  <rect x="89" y="118" width="22" height="26" rx="9" fill="#E7C29C"/>
+  <!-- 顔 -->
+  <ellipse cx="100" cy="94" rx="34" ry="40" fill="#F0CDA6"/>
+  <!-- 長髪 -->
+  <path d="M60 96 Q54 48 100 44 Q146 48 140 96 Q138 124 130 140 Q132 100 122 80 Q112 68 100 68 Q88 68 78 80 Q68 100 70 140 Q62 124 60 96 Z" fill="#BDB6AD"/>
+  <!-- ベレー帽 -->
+  <path d="M62 64 Q100 40 138 64 Q140 54 100 50 Q60 54 62 64 Z" fill="#5a2f2f"/>
+  <!-- 眉 -->
+  <path d="M78 88 q9 -3 16 0" stroke="#9a948b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M106 88 q9 -3 16 0" stroke="#9a948b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- 目 -->
+  <ellipse cx="87" cy="96" rx="4" ry="4.4" fill="#3a2b1c"/>
+  <ellipse cx="113" cy="96" rx="4" ry="4.4" fill="#3a2b1c"/>
+  <!-- 口ひげ＋口 -->
+  <path d="M84 112 Q100 120 116 112" stroke="#C9C3BB" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M92 113 q8 4 16 0" stroke="#7a3b34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+</svg>
